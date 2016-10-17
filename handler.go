@@ -9,6 +9,13 @@ import (
 	"google.golang.org/appengine/blobstore"
 )
 
+type BlobHandlerOnEvent struct {
+	OnRequest    func(http.ResponseWriter, *http.Request, *BlobHandler) (string, map[string]string)
+	OnBeforeSave func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error
+	OnComplete   func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error
+	OnFailed     func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem)
+}
+
 type BlobHandler struct {
 	manager      *BlobManager
 	onRequest    func(http.ResponseWriter, *http.Request, *BlobHandler) (string, map[string]string)
@@ -23,20 +30,15 @@ func (obj *BlobHandler) GetManager() *BlobManager {
 	return obj.manager
 }
 
-func NewBlobHandler(callbackUrl string, privateSign string, //
-	config BlobManagerConfig, //
-	onRequest func(http.ResponseWriter, *http.Request, *BlobHandler) (string, map[string]string), //
-	onBeforeSave func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error,
-	onComplete func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error,
-	onFailed func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem)) *BlobHandler {
+func NewBlobHandler(callbackUrl string, privateSign string, config BlobManagerConfig, event BlobHandlerOnEvent) *BlobHandler {
 	handlerObj := new(BlobHandler)
 	handlerObj.privateSign = privateSign
 	handlerObj.callbackUrl = callbackUrl
 	handlerObj.manager = NewBlobManager(config)
-	handlerObj.onRequest = onRequest
-	handlerObj.onComplete = onComplete
-	handlerObj.onBeforeSave = onBeforeSave
-	handlerObj.onFailed = onFailed
+	handlerObj.onRequest = event.OnRequest
+	handlerObj.onComplete = event.OnComplete
+	handlerObj.onBeforeSave = event.OnBeforeSave
+	handlerObj.onFailed = event.OnFailed
 	return handlerObj
 }
 
