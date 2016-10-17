@@ -61,7 +61,7 @@ func (obj *BlobManager) HandleUploaded(ctx context.Context, r *http.Request) (*B
 	if fileName == "" {
 		fileName = blobKey
 	}
-	blobItem, err2 := obj.GetBlobItem(ctx, dirName, fileName, false)
+	blobItem, err2 := obj.GetBlobItem(ctx, dirName, fileName)
 	if err2 == nil {
 		blobstore.Delete(ctx, appengine.BlobKey(blobItem.GetBlobKey()))
 		blobItem.gaeObject.BlobKey = blobKey
