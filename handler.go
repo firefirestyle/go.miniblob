@@ -37,38 +37,50 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 //
 //
 func (obj *BlobManager) HandleUploaded(ctx context.Context, r *http.Request) (*BlobItem, string, error) {
+	//
 	blobs, _, err := blobstore.ParseUpload(r)
 	if err != nil {
-		// error
 		return nil, "", err
 	}
+
+	// --
+	// dirName
+	// --
 	dirNameSrc, err1 := base64.StdEncoding.DecodeString(r.FormValue("dir"))
 	if err1 != nil {
-		// error
 		return nil, "", err1
 	}
 	dirName := string(dirNameSrc)
+
+	// --
+	// filename
+	// --
 	fileName := r.FormValue("file")
 
-	reqId := string(r.FormValue("opt"))
+	// --
+	// opt
+	// --
+	optProp := string(r.FormValue("opt"))
 
+	// --
+	// file
+	// --
 	file := blobs["file"]
 	if len(file) == 0 {
-		// error
 		return nil, "", errors.New("")
 	}
 	blobKey := string(file[0].BlobKey)
 	if fileName == "" {
 		fileName = blobKey
 	}
+
 	//
 	//
 	//
 	newItem := obj.NewBlobItem(ctx, dirName, fileName, blobKey)
 	err2 := obj.SaveBlobItem(ctx, newItem)
-
 	if err2 != nil {
 		return nil, "", errors.New("")
 	}
-	return newItem, reqId, err
+	return newItem, optProp, err
 }
