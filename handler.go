@@ -1,7 +1,7 @@
 package miniblob
 
 import (
-	"net/url"
+	//	"net/url"
 
 	"net/http"
 
@@ -11,24 +11,26 @@ import (
 
 type BlobHandler struct {
 	manager      *BlobManager
-	onRequest    func(http.ResponseWriter, *http.Request, url.Values) (string, map[string]string)
-	onBeforeSave func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error
-	onComplete   func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error
-	onFailed     func(http.ResponseWriter, *http.Request, url.Values, *BlobItem)
+	onRequest    func(http.ResponseWriter, *http.Request, *BlobHandler) (string, map[string]string)
+	onBeforeSave func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error
+	onComplete   func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error
+	onFailed     func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem)
 	callbackUrl  string
+	privateSign  string
 }
 
 func (obj *BlobHandler) GetManager() *BlobManager {
 	return obj.manager
 }
 
-func NewBlobHandler(callbackUrl string, //
+func NewBlobHandler(callbackUrl string, privateSign string, //
 	config BlobManagerConfig, //
-	onRequest func(http.ResponseWriter, *http.Request, url.Values) (string, map[string]string), //
-	onBeforeSave func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error,
-	onComplete func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error,
-	onFailed func(http.ResponseWriter, *http.Request, url.Values, *BlobItem)) *BlobHandler {
+	onRequest func(http.ResponseWriter, *http.Request, *BlobHandler) (string, map[string]string), //
+	onBeforeSave func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error,
+	onComplete func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem) error,
+	onFailed func(http.ResponseWriter, *http.Request, *BlobHandler, *BlobItem)) *BlobHandler {
 	handlerObj := new(BlobHandler)
+	handlerObj.privateSign = privateSign
 	handlerObj.callbackUrl = callbackUrl
 	handlerObj.manager = NewBlobManager(config)
 	handlerObj.onRequest = onRequest
@@ -89,7 +91,7 @@ func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request)
 	kv := "abcdef"
 	vs := map[string]string{}
 	if obj.onRequest != nil {
-		kv, vs = obj.onRequest(w, r, r.URL.Query())
+		kv, vs = obj.onRequest(w, r, obj)
 	}
 	ctx := appengine.NewContext(r)
 	uu, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, "", vs)
@@ -115,7 +117,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	newItem := obj.manager.NewBlobItem(ctx, res.DirName, res.FileName, res.BlobKey)
 	if obj.onBeforeSave != nil {
-		err := obj.onBeforeSave(w, r, r.URL.Query(), newItem)
+		err := obj.onBeforeSave(w, r, obj, newItem)
 		if err != nil {
 			w.Write([]byte("Failed to save blobitem"))
 			w.WriteHeader(http.StatusBadRequest)
@@ -125,7 +127,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	err2 := obj.manager.SaveBlobItem(ctx, newItem)
 	if err2 != nil {
 		if obj.onFailed != nil {
-			obj.onFailed(w, r, r.URL.Query(), newItem)
+			obj.onFailed(w, r, obj, newItem)
 		}
 		w.Write([]byte("Failed to save blobitem"))
 		w.WriteHeader(http.StatusBadRequest)
@@ -133,7 +135,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if obj.onComplete != nil {
-		err := obj.onComplete(w, r, r.URL.Query(), newItem)
+		err := obj.onComplete(w, r, obj, newItem)
 		if err != nil {
 			w.Write([]byte("Failed to save blobitem"))
 			w.WriteHeader(http.StatusBadRequest)
