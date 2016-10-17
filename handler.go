@@ -11,32 +11,61 @@ import (
 
 	"net/http"
 
-	"errors"
+	//	"errors"
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 
 	"crypto/sha1"
 	"io"
+
+	//	"google.golang.org/appengine/log"
 )
 
 type BlobHandler struct {
-	manager     *BlobManager
-	onRequest   func(url.Values) (string, map[string]string)
-	onComplete  func(url.Values, *BlobItem) map[string]string
-	callbackUrl string
+	manager      *BlobManager
+	onRequest    func(http.ResponseWriter, *http.Request, url.Values) (string, map[string]string)
+	onBeforeSave func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error
+	onComplete   func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error
+	onFailed     func(http.ResponseWriter, *http.Request, url.Values, *BlobItem)
+	callbackUrl  string
+}
+
+func (obj *BlobHandler) GetManager() *BlobManager {
+	return obj.manager
 }
 
 func NewBlobHandler(callbackUrl string, //
 	config BlobManagerConfig, //
-	onRequest func(url.Values) (string, map[string]string), //
-	onComplete func(url.Values, *BlobItem) map[string]string) *BlobHandler {
+	onRequest func(http.ResponseWriter, *http.Request, url.Values) (string, map[string]string), //
+	onBeforeSave func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error,
+	onComplete func(http.ResponseWriter, *http.Request, url.Values, *BlobItem) error,
+	onFailed func(http.ResponseWriter, *http.Request, url.Values, *BlobItem)) *BlobHandler {
 	handlerObj := new(BlobHandler)
 	handlerObj.callbackUrl = callbackUrl
 	handlerObj.manager = NewBlobManager(config)
 	handlerObj.onRequest = onRequest
 	handlerObj.onComplete = onComplete
+	handlerObj.onBeforeSave = onBeforeSave
+	handlerObj.onFailed = onFailed
 	return handlerObj
+}
+
+func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+	requestValues := r.URL.Query()
+
+	dir := requestValues.Get("dir")
+	file := requestValues.Get("file")
+	//
+	ctx := appengine.NewContext(r)
+	blobObj, err := obj.manager.GetBlobItem(ctx, dir, file)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	} else {
+		obj.manager.DeleteBlobItem(ctx, blobObj)
+		return
+	}
 }
 
 func (obj *BlobHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +111,7 @@ func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request)
 
 	//
 	if obj.onRequest != nil {
-		kv, vs := obj.onRequest(r.URL.Query())
+		kv, vs := obj.onRequest(w, r, r.URL.Query())
 		callbackValue.Add("kv", kv)
 		io.WriteString(hash, kv)
 		for k, v := range vs {
@@ -94,6 +123,7 @@ func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request)
 	//
 	//
 	ctx := appengine.NewContext(r)
+	//log.Infof(ctx, ">>>>>"+callbackUrlObj.String())
 	uu, err := blobstore.UploadURL(ctx, callbackUrlObj.String(), nil)
 	//
 	//
@@ -154,38 +184,69 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	//
 	ctx := appengine.NewContext(r)
 	newItem := obj.manager.NewBlobItem(ctx, dirName, fileName, blobKey)
-
+	if obj.onBeforeSave != nil {
+		err := obj.onBeforeSave(w, r, r.URL.Query(), newItem)
+		if err != nil {
+			w.Write([]byte("Failed to save blobitem"))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	}
 	err2 := obj.manager.SaveBlobItem(ctx, newItem)
 	if err2 != nil {
+		if obj.onFailed != nil {
+			obj.onFailed(w, r, r.URL.Query(), newItem)
+		}
 		w.Write([]byte("Failed to save blobitem"))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if obj.onComplete != nil {
-		obj.onComplete(r.URL.Query(), newItem)
+		err := obj.onComplete(w, r, r.URL.Query(), newItem)
+		if err != nil {
+			w.Write([]byte("Failed to save blobitem"))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
-
+	w.Write([]byte(newItem.GetBlobKey()))
+	w.WriteHeader(http.StatusOK)
 }
 
-//
-//
-//
-//
-//
-//
-func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, fileName string, opt string) (string, error) {
-	if opt == "" {
-		opt = "none"
-	}
+func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, fileName string, uniqueSign string, optKeyValue map[string]string) (*url.URL, error) {
+	//
+	//
+	callbackUrlObj, _ := url.Parse(obj.callbackUrl)
+	callbackValue := callbackUrlObj.Query()
+	callbackValue.Add("dir", dirName)
+	callbackValue.Add("file", fileName)
+	//
+	hash := sha1.New()
+	io.WriteString(hash, obj.projectId)
+	io.WriteString(hash, dirName)
+	io.WriteString(hash, obj.blobItemKind)
+	io.WriteString(hash, fileName)
 
-	var ary = []string{obj.callbackUrl + //
-		"?dir=", url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(dirName))), //
-		"&file=", url.QueryEscape(fileName), //
-		"&opt=", opt}
-	uu, err2 := blobstore.UploadURL(ctx, strings.Join(ary, ""), nil) //&option)
-	return uu.String(), err2
+	//
+	callbackValue.Add("kv", uniqueSign)
+	io.WriteString(hash, uniqueSign)
+	for k, v := range optKeyValue {
+		callbackValue.Add(k, v)
+	}
+	callbackValue.Add("hash", base64.StdEncoding.EncodeToString(hash.Sum(nil)))
+	callbackUrlObj.RawQuery = callbackValue.Encode()
+	return blobstore.UploadURL(ctx, callbackUrlObj.String(), nil)
 }
+
+/*
+//
+//
+//
+//
+//
+//
+
 
 //
 //
@@ -238,3 +299,4 @@ func (obj *BlobManager) HandleUploaded(ctx context.Context, r *http.Request) (*B
 	}
 	return newItem, optProp, err
 }
+*/
