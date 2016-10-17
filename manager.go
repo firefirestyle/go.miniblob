@@ -18,6 +18,12 @@ type BlobManager struct {
 	projectId    string
 }
 
+type BlobManagerConfig struct {
+	ProjectId string
+	Kind      string
+	UrlRoot   string
+}
+
 func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId string) (*BlobItem, error) {
 	jsonSource, errGetJsonSource := memcache.Get(ctx, keyId)
 	if errGetJsonSource != nil {
@@ -42,11 +48,11 @@ func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId strin
 	return ret, nil
 }
 
-func NewBlobManager(projectId string, uploadUrlBase string, blobItemKind string) *BlobManager {
+func NewBlobManager(config BlobManagerConfig) *BlobManager {
 	ret := new(BlobManager)
-	ret.projectId = projectId
-	ret.blobItemKind = blobItemKind
-	ret.BasePath = uploadUrlBase
+	ret.projectId = config.ProjectId
+	ret.blobItemKind = config.Kind
+	ret.BasePath = config.UrlRoot
 	return ret
 }
 
