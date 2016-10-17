@@ -128,13 +128,13 @@ func (obj *BlobItem) updateMemcache(ctx context.Context) error {
 	return err_toJson
 }
 
-func (obj *BlobItem) SaveDB(ctx context.Context) error {
+func (obj *BlobItem) saveDB(ctx context.Context) error {
 	_, e := datastore.Put(ctx, obj.gaeObjectKey, obj.gaeObject)
 	obj.updateMemcache(ctx)
 	return e
 }
 
-func (obj *BlobItem) DeleteFromDB(ctx context.Context) error {
+func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
 	blobstore.Delete(ctx, appengine.BlobKey(obj.GetBlobKey()))
 	return datastore.Delete(ctx, obj.gaeObjectKey)
 }

@@ -13,7 +13,7 @@ import (
 
 	"errors"
 
-	"google.golang.org/appengine"
+	//	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 )
 
@@ -61,17 +61,14 @@ func (obj *BlobManager) HandleUploaded(ctx context.Context, r *http.Request) (*B
 	if fileName == "" {
 		fileName = blobKey
 	}
-	blobItem, err2 := obj.GetBlobItem(ctx, dirName, fileName)
-	if err2 == nil {
-		blobstore.Delete(ctx, appengine.BlobKey(blobItem.GetBlobKey()))
-		blobItem.gaeObject.BlobKey = blobKey
-	} else {
-		blobItem = obj.NewBlobItem(ctx, dirName, fileName, blobKey)
-	}
+	//
+	//
+	//
+	newItem := obj.NewBlobItem(ctx, dirName, fileName, blobKey)
+	err2 := obj.SaveBlobItem(ctx, newItem)
 
-	err = blobItem.SaveDB(ctx)
-	if err != nil {
-		blobstore.Delete(ctx, appengine.BlobKey(blobKey))
+	if err2 != nil {
+		return nil, "", errors.New("")
 	}
-	return blobItem, reqId, err
+	return newItem, reqId, err
 }
