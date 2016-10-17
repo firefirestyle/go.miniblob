@@ -39,6 +39,30 @@ func NewBlobHandler(callbackUrl string, //
 	return handlerObj
 }
 
+func (obj *BlobHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+	requestValues := r.URL.Query()
+	key := requestValues.Get("key")
+	dir := requestValues.Get("dir")
+	file := requestValues.Get("file")
+
+	//
+	if key != "" {
+		w.Header().Set("Cache-Control", "public, max-age=2592000")
+		blobstore.Send(w, appengine.BlobKey(key))
+		return
+	} else {
+		ctx := appengine.NewContext(r)
+		blobObj, err := obj.manager.GetBlobItem(ctx, dir, file)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		} else {
+			blobstore.Send(w, appengine.BlobKey(blobObj.GetBlobKey()))
+			return
+		}
+	}
+}
+
 func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request) {
 	requestValues := r.URL.Query()
 	dirName := requestValues.Get("dir")
