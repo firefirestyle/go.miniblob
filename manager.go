@@ -57,23 +57,14 @@ func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name str
 		return memCacheObj, nil
 	}
 	key := obj.NewBlobItemKey(ctx, parent, name)
-	var item GaeObjectBlobItem
-	err := datastore.Get(ctx, key, &item)
+	ret, err := obj.NewBlobItemFromGaeObjectKey(ctx, key)
 
-	var ret *BlobItem = nil
-	if err != nil {
-		if isNew == true {
-			item.Name = name
-			item.Parent = parent
-			ret = obj.NewBlobItemFromGaeObject(ctx, key, &item)
-		} else {
-			return nil, err
-		}
+	if err == nil {
+		ret.updateMemcache(ctx)
+		return ret, nil
 	} else {
-		ret = obj.NewBlobItemFromGaeObject(ctx, key, &item)
+		return nil, err
 	}
-	ret.updateMemcache(ctx)
-	return ret, nil
 }
 
 func (obj *BlobManager) MakeStringId(parent string, name string) string {
@@ -96,13 +87,26 @@ func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name str
 	return ret
 }
 
+func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
+	var item GaeObjectBlobItem
+	err := datastore.Get(ctx, gaeKey, &item)
+	if err != nil {
+		return nil, err
+	}
+	ret := new(BlobItem)
+	ret.gaeObject = &item
+	ret.gaeObjectKey = gaeKey
+	return ret, nil
+}
+
+/*
 func (obj *BlobManager) NewBlobItemFromGaeObject(ctx context.Context, gaeKey *datastore.Key, gaeObj *GaeObjectBlobItem) *BlobItem {
 	ret := new(BlobItem)
 	ret.gaeObject = gaeObj
 	ret.gaeObjectKey = gaeKey
 	return ret
 }
-
+*/
 /*
 - kind: BlobItem
   properties:
@@ -134,6 +138,7 @@ func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.
 	if cursor != nil {
 		q = q.Start(*cursor)
 	}
+	q = q.KeysOnly()
 	founds := q.Run(ctx)
 
 	var retUser []*BlobItem
@@ -142,12 +147,14 @@ func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.
 	var cursorOne string = ""
 
 	for i := 0; ; i++ {
-		var d GaeObjectBlobItem
-		key, err := founds.Next(&d)
+		key, err := founds.Next(nil)
 		if err != nil || err == datastore.Done {
 			break
 		} else {
-			retUser = append(retUser, obj.NewBlobItemFromGaeObject(ctx, key, &d))
+			v, e := obj.NewBlobItemFromGaeObjectKey(ctx, key)
+			if e == nil {
+				retUser = append(retUser, v)
+			}
 		}
 		if i == 0 {
 			cursorOne = obj.makeCursorSrc(founds)
@@ -156,8 +163,6 @@ func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.
 	cursorNext = obj.makeCursorSrc(founds)
 	return retUser, cursorOne, cursorNext
 }
-
-//
 
 func (obj *BlobManager) newCursorFromSrc(cursorSrc string) *datastore.Cursor {
 	c1, e := datastore.DecodeCursor(cursorSrc)
