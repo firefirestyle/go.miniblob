@@ -92,7 +92,7 @@ func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request)
 		kv, vs = obj.onRequest(w, r, r.URL.Query())
 	}
 	ctx := appengine.NewContext(r)
-	uu, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, vs)
+	uu, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, "", vs)
 	//
 	if err != nil {
 		w.Write([]byte("error://failed.to.make.uploadurl"))
@@ -104,7 +104,7 @@ func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request)
 
 func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	//
-	res, e := obj.manager.CheckedCallback(r)
+	res, e := obj.manager.CheckedCallback(r, "")
 	if e != nil {
 		w.Write([]byte(e.Error()))
 		w.WriteHeader(http.StatusBadRequest)

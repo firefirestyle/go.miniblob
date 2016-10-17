@@ -62,7 +62,7 @@ func (obj *BlobManager) MakeStringId(parent string, name string) string {
 // for make original hundler
 //
 
-func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, fileName string, uniqueSign string, optKeyValue map[string]string) (*url.URL, error) {
+func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, fileName string, publicSign string, privateSign string, optKeyValue map[string]string) (*url.URL, error) {
 	//
 	//
 	callbackUrlObj, _ := url.Parse(obj.callbackUrl)
@@ -75,10 +75,11 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)
+	io.WriteString(hash, privateSign)
 
 	//
-	callbackValue.Add("kv", uniqueSign)
-	io.WriteString(hash, uniqueSign)
+	callbackValue.Add("kv", publicSign)
+	io.WriteString(hash, publicSign)
 	if optKeyValue != nil {
 		for k, v := range optKeyValue {
 			callbackValue.Add(k, v)
@@ -95,7 +96,7 @@ type CheckCallbackResult struct {
 	BlobKey  string
 }
 
-func (obj *BlobManager) CheckedCallback(r *http.Request) (*CheckCallbackResult, error) {
+func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*CheckCallbackResult, error) {
 	//
 	blobs, _, err := blobstore.ParseUpload(r)
 	if err != nil {
@@ -111,6 +112,7 @@ func (obj *BlobManager) CheckedCallback(r *http.Request) (*CheckCallbackResult, 
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)
+	io.WriteString(hash, privateSign)
 	if kv != "" {
 		io.WriteString(hash, kv)
 	}
