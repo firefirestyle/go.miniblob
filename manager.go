@@ -7,22 +7,22 @@ import (
 )
 
 type BlobManager struct {
-	BasePath     string
+	callbackUrl  string
 	blobItemKind string
 	projectId    string
 }
 
 type BlobManagerConfig struct {
-	ProjectId string
-	Kind      string
-	UrlRoot   string
+	ProjectId   string
+	Kind        string
+	CallbackUrl string
 }
 
 func NewBlobManager(config BlobManagerConfig) *BlobManager {
 	ret := new(BlobManager)
 	ret.projectId = config.ProjectId
 	ret.blobItemKind = config.Kind
-	ret.BasePath = config.UrlRoot
+	ret.callbackUrl = config.CallbackUrl
 	return ret
 }
 

@@ -13,7 +13,6 @@ import (
 
 	"errors"
 
-	//	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 )
 
@@ -25,7 +24,7 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 		opt = "none"
 	}
 
-	var ary = []string{obj.BasePath + //
+	var ary = []string{obj.callbackUrl + //
 		"?dir=", url.QueryEscape(base64.StdEncoding.EncodeToString([]byte(dirName))), //
 		"&file=", url.QueryEscape(fileName), //
 		"&opt=", opt}
