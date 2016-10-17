@@ -13,9 +13,140 @@ import (
 
 	"errors"
 
+	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
+
+	"crypto/sha1"
+	"io"
 )
 
+type BlobHandler struct {
+	manager     *BlobManager
+	onRequest   func(url.Values) (string, map[string]string)
+	onComplete  func(url.Values, *BlobItem) map[string]string
+	callbackUrl string
+}
+
+func NewBlobHandler(callbackUrl string, //
+	config BlobManagerConfig, //
+	onRequest func(url.Values) (string, map[string]string), //
+	onComplete func(url.Values, *BlobItem) map[string]string) *BlobHandler {
+	handlerObj := new(BlobHandler)
+	handlerObj.callbackUrl = callbackUrl
+	handlerObj.manager = NewBlobManager(config)
+	handlerObj.onRequest = onRequest
+	handlerObj.onComplete = onComplete
+	return handlerObj
+}
+
+func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request) {
+	requestValues := r.URL.Query()
+	dirName := requestValues.Get("dir")
+	fileName := requestValues.Get("file")
+	//
+	//
+	callbackUrlObj, _ := url.Parse(obj.callbackUrl)
+	callbackValue := callbackUrlObj.Query()
+	callbackValue.Add("dir", dirName)
+	callbackValue.Add("file", fileName)
+	//
+	hash := sha1.New()
+	io.WriteString(hash, obj.manager.projectId)
+	io.WriteString(hash, dirName)
+	io.WriteString(hash, obj.manager.blobItemKind)
+	io.WriteString(hash, fileName)
+
+	//
+	if obj.onRequest != nil {
+		kv, vs := obj.onRequest(r.URL.Query())
+		callbackValue.Add("kv", kv)
+		io.WriteString(hash, kv)
+		for k, v := range vs {
+			callbackValue.Add(k, v)
+		}
+	}
+	callbackValue.Add("hash", base64.StdEncoding.EncodeToString(hash.Sum(nil)))
+	callbackUrlObj.RawQuery = callbackValue.Encode()
+	//
+	//
+	ctx := appengine.NewContext(r)
+	uu, err := blobstore.UploadURL(ctx, callbackUrlObj.String(), nil)
+	//
+	//
+	if err != nil {
+		w.Write([]byte("error://failed.to.make.uploadurl"))
+	} else {
+		w.Write([]byte(uu.String()))
+	}
+}
+
+func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
+	//
+	blobs, _, err := blobstore.ParseUpload(r)
+	if err != nil {
+		// error
+		w.Write([]byte("Failed to make blobls"))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	hashValue := r.FormValue("hash")
+	dirName := r.FormValue("dir")
+	fileName := r.FormValue("file")
+	kv := r.FormValue("kv")
+	hash := sha1.New()
+	io.WriteString(hash, obj.manager.projectId)
+	io.WriteString(hash, dirName)
+	io.WriteString(hash, obj.manager.blobItemKind)
+	io.WriteString(hash, fileName)
+	if kv != "" {
+		io.WriteString(hash, kv)
+	}
+	calcHash := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+	if 0 != strings.Compare(calcHash, hashValue) {
+		w.Write([]byte("Failed to make hash"))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// --
+	// files
+	// --
+	file := blobs["file"]
+	if len(file) == 0 {
+		w.Write([]byte("Failed to make files"))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	//
+	// opt
+	blobKey := string(file[0].BlobKey)
+	if fileName == "" {
+		fileName = blobKey
+	}
+
+	//
+	//
+	//
+	ctx := appengine.NewContext(r)
+	newItem := obj.manager.NewBlobItem(ctx, dirName, fileName, blobKey)
+
+	err2 := obj.manager.SaveBlobItem(ctx, newItem)
+	if err2 != nil {
+		w.Write([]byte("Failed to save blobitem"))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if obj.onComplete != nil {
+		obj.onComplete(r.URL.Query(), newItem)
+	}
+
+}
+
+//
+//
+//
 //
 //
 //
