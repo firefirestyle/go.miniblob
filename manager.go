@@ -51,11 +51,6 @@ func NewBlobManager(projectId string, uploadUrlBase string, blobItemKind string)
 }
 
 func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name string, isNew bool) (*BlobItem, error) {
-	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, obj.MakeStringId(parent, name))
-	if errMemCcache == nil {
-		log.Infof(ctx, ">>>> from memcache "+obj.projectId+"://"+parent+"/"+name)
-		return memCacheObj, nil
-	}
 	key := obj.NewBlobItemKey(ctx, parent, name)
 	ret, err := obj.NewBlobItemFromGaeObjectKey(ctx, key)
 
@@ -88,6 +83,13 @@ func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name str
 }
 
 func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
+	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, gaeKey.StringID())
+	if errMemCcache == nil {
+		log.Infof(ctx, ">>>> from memcache "+obj.projectId+":"+gaeKey.StringID())
+		return memCacheObj, nil
+	}
+	//
+	//
 	var item GaeObjectBlobItem
 	err := datastore.Get(ctx, gaeKey, &item)
 	if err != nil {
@@ -99,14 +101,6 @@ func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey 
 	return ret, nil
 }
 
-/*
-func (obj *BlobManager) NewBlobItemFromGaeObject(ctx context.Context, gaeKey *datastore.Key, gaeObj *GaeObjectBlobItem) *BlobItem {
-	ret := new(BlobItem)
-	ret.gaeObject = gaeObj
-	ret.gaeObjectKey = gaeKey
-	return ret
-}
-*/
 /*
 - kind: BlobItem
   properties:
