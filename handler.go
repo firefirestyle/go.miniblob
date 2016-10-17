@@ -7,8 +7,6 @@ import (
 
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
-
-	//	"google.golang.org/appengine/log"
 )
 
 type BlobHandler struct {
@@ -49,6 +47,7 @@ func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	blobObj, err := obj.manager.GetBlobItem(ctx, dir, file)
 	if err != nil {
+		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	} else {
@@ -72,6 +71,7 @@ func (obj *BlobHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 		ctx := appengine.NewContext(r)
 		blobObj, err := obj.manager.GetBlobItem(ctx, dir, file)
 		if err != nil {
+			w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		} else {
@@ -96,6 +96,7 @@ func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request)
 	//
 	if err != nil {
 		w.Write([]byte("error://failed.to.make.uploadurl"))
+		w.WriteHeader(http.StatusBadRequest)
 	} else {
 		w.Write([]byte(uu.String()))
 	}
