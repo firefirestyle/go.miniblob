@@ -1,53 +1,61 @@
 package miniblob
 
 import (
-	"golang.org/x/net/context"
-
 	"bytes"
 	"net/http"
+	//"net/url"
+
+	"golang.org/x/net/context"
 
 	"mime/multipart"
 
+	//"io"
+
+	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/urlfetch"
 )
 
-func (obj *BlobManager) SaveData(c context.Context, url string, sampleData []byte) error {
+//func (obj *BlobManager) MakeRequestUrlForOwn(ctx context.Context, dirName string, fileName string, //
+//	publicSign string, privateSign string, optKeyValues map[string]string) (*url.URL, error) {
+//	return obj.MakeRequestUrl(ctx, dirName, fileName, publicSign, privateSign, optKeyValues)
+//}
 
-	// Now you can prepare a form that you will submit to that URL.
-	var b bytes.Buffer
-	fw := multipart.NewWriter(&b)
-	// Do not change the form field, it must be "file"!
-	// You are free to change the filename though, it will be stored in the BlobInfo.
-	file, err := fw.CreateFormFile("file", "example.csv")
+func (obj *BlobManager) MakeRequestUrlForOwn(ctx context.Context, dirName string, fileName string, data []byte) error {
+	urlObj, err := blobstore.UploadURL(ctx, "/dummy", nil)
 	if err != nil {
 		return err
 	}
-	if _, err = file.Write(sampleData); err != nil {
+	return obj.SaveData(ctx, urlObj.String(), data)
+}
+
+func (obj *BlobManager) SaveData(c context.Context, url string, data []byte) error {
+
+	var b bytes.Buffer
+	fw := multipart.NewWriter(&b)
+	file, err := fw.CreateFormField("file")
+	if err != nil {
 		return err
 	}
-	// Don't forget to close the multipart writer.
-	// If you don't close it, your request will be missing the terminating boundary.
+	if _, err = file.Write(data); err != nil {
+		return err
+	}
 	fw.Close()
-
-	// Now that you have a form, you can submit it to your handler.
 	req, err := http.NewRequest("POST", url, &b)
 	if err != nil {
 		return err
 	}
-	// Don't forget to set the content type, this will contain the boundary.
 	req.Header.Set("Content-Type", fw.FormDataContentType())
 
-	// Now submit the request.
+	//
+	//
 	client := urlfetch.Client(c)
 	res, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 
-	// Check the response status, it should be whatever you return in the `/upload` handler.
 	if res.StatusCode != http.StatusCreated {
 		return err
 	}
-	// Everything went fine.
 	return nil
 }
