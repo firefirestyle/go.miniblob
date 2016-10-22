@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"google.golang.org/appengine/blobstore"
+	"google.golang.org/appengine/log"
 )
 
 type BlobManager struct {
@@ -39,12 +40,15 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 
 func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name string) (*BlobItem, error) {
 	key := obj.NewBlobItemKey(ctx, parent, name)
+	//Debug(ctx, "KEY ============="+key.StringID())
+
 	return obj.NewBlobItemFromGaeObjectKey(ctx, key)
 }
 
 func (obj *BlobManager) SaveBlobItem(ctx context.Context, newItem *BlobItem) error {
 	oldItem, err2 := obj.GetBlobItem(ctx, newItem.GetParent(), newItem.GetName())
 	if err2 == nil {
+		//	Debug(ctx, "delete From DB OLD ITEM =============")
 		oldItem.deleteFromDB(ctx)
 	}
 	return newItem.saveDB(ctx)
@@ -140,4 +144,8 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 		FileName: fileName,
 		BlobKey:  blobKey,
 	}, nil
+}
+
+func Debug(ctx context.Context, message string) {
+	log.Infof(ctx, message)
 }

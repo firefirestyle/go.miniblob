@@ -10,7 +10,6 @@ import (
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/memcache"
 )
 
@@ -75,14 +74,14 @@ func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name str
 	ret.gaeObject.Name = name
 	ret.gaeObject.BlobKey = blobKey
 	ret.gaeObject.Updated = time.Now()
-	ret.gaeObjectKey = datastore.NewKey(ctx, obj.blobItemKind, ""+parent+"/"+name, 0, nil)
+	ret.gaeObjectKey = datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name), 0, nil)
 	return ret
 }
 
 func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
 	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, gaeKey.StringID())
 	if errMemCcache == nil {
-		log.Infof(ctx, ">>>> from memcache "+obj.projectId+":"+gaeKey.StringID())
+		//		Debug(ctx, ">>>> from memcache "+obj.projectId+":"+gaeKey.StringID())
 		return memCacheObj, nil
 	}
 	//
@@ -90,6 +89,7 @@ func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey 
 	var item GaeObjectBlobItem
 	err := datastore.Get(ctx, gaeKey, &item)
 	if err != nil {
+		//		Debug(ctx, ">>>> failed to get "+obj.projectId+":"+gaeKey.StringID())
 		return nil, err
 	}
 	ret := new(BlobItem)
