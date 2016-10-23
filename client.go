@@ -15,11 +15,6 @@ import (
 	"google.golang.org/appengine/urlfetch"
 )
 
-//func (obj *BlobManager) MakeRequestUrlForOwn(ctx context.Context, dirName string, fileName string, //
-//	publicSign string, privateSign string, optKeyValues map[string]string) (*url.URL, error) {
-//	return obj.MakeRequestUrl(ctx, dirName, fileName, publicSign, privateSign, optKeyValues)
-//}
-
 func (obj *BlobManager) MakeRequestUrlForOwn(ctx context.Context, dirName string, fileName string, data []byte) error {
 	urlObj, err := blobstore.UploadURL(ctx, "/dummy", nil)
 	if err != nil {
