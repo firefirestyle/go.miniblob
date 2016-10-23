@@ -48,8 +48,10 @@ func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name str
 func (obj *BlobManager) SaveBlobItem(ctx context.Context, newItem *BlobItem) error {
 	oldItem, err2 := obj.GetBlobItem(ctx, newItem.GetParent(), newItem.GetName())
 	if err2 == nil {
-		//	Debug(ctx, "delete From DB OLD ITEM =============")
-		oldItem.deleteFromDB(ctx)
+		Debug(ctx, "delete From DB OLD ITEM =============")
+		if nil != oldItem.deleteFromDB(ctx) {
+			Debug(ctx, "SaveBlobItem Faied :")
+		}
 	}
 	return newItem.saveDB(ctx)
 }

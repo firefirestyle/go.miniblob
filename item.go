@@ -107,7 +107,7 @@ func (obj *BlobItem) toJson() (string, error) {
 		TypeProjectId: obj.gaeObject.ProjectId,
 		TypeParent:    obj.gaeObject.Parent,
 		TypeName:      obj.gaeObject.Name,
-		TypeBlobKey:   obj.gaeObjectKey.StringID(),
+		TypeBlobKey:   obj.gaeObject.BlobKey,
 		TypeOwner:     obj.gaeObject.Owner,
 		TypeInfo:      obj.gaeObject.Info,
 		TypeUpdated:   obj.gaeObject.Updated.UnixNano(),
@@ -135,7 +135,10 @@ func (obj *BlobItem) saveDB(ctx context.Context) error {
 }
 
 func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
-	blobstore.Delete(ctx, appengine.BlobKey(obj.GetBlobKey()))
+	Debug(ctx, "delete From DB OLD ITEM =A============GK"+obj.gaeObjectKey.StringID()+";BK:"+obj.GetBlobKey())
+	if nil != blobstore.Delete(ctx, appengine.BlobKey(obj.GetBlobKey())) {
+		Debug(ctx, "SaveBlobItem Faied Blob: "+obj.gaeObjectKey.StringID()+":"+obj.GetBlobKey())
+	}
 	return datastore.Delete(ctx, obj.gaeObjectKey)
 }
 
