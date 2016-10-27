@@ -96,11 +96,15 @@ const (
 	ErrorCodeSaveBlobItem    = 3004
 )
 
-func (obj *BlobHandler) BlobRequestToken(w http.ResponseWriter, r *http.Request) {
-	miniPropObj := miniprop.NewMiniProp()
+func (obj *BlobHandler) HandleBlobRequestToken(w http.ResponseWriter, r *http.Request) {
 	requestValues := r.URL.Query()
 	dirName := requestValues.Get("dir")
 	fileName := requestValues.Get("file")
+	obj.HandleBlobRequestTokenFromParams(w, r, dirName, fileName)
+}
+
+func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, r *http.Request, dirName string, fileName string) {
+	miniPropObj := miniprop.NewMiniProp()
 	//
 	kv := "abcdef"
 	vs := map[string]string{}
