@@ -9,7 +9,7 @@ import (
 
 	miniblob "github.com/firefirestyle/go.miniblob/blob"
 	"google.golang.org/appengine"
-	"google.golang.org/appengine/blobstore"
+	//	"google.golang.org/appengine/blobstore"
 )
 
 type BlobHandlerOnEvent struct {
@@ -20,6 +20,9 @@ type BlobHandlerOnEvent struct {
 	OnDeleteRequest func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error
 	OnDeleteFailed  func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
 	OnDeleteSuccess func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnGetRequest    func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error
+	OnGetFailed     func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnGetSuccess    func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
 }
 
 type BlobHandler struct {
@@ -59,6 +62,7 @@ func NewBlobHandler(callbackUrl string, privateSign string, config miniblob.Blob
 
 		}
 	}
+	//
 	if handlerObj.onEvent.OnDeleteRequest == nil {
 		handlerObj.onEvent.OnDeleteRequest = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error {
 			return nil
@@ -73,6 +77,22 @@ func NewBlobHandler(callbackUrl string, privateSign string, config miniblob.Blob
 
 		}
 	}
+	//
+	if handlerObj.onEvent.OnGetRequest == nil {
+		handlerObj.onEvent.OnGetRequest = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error {
+			return nil
+		}
+	}
+	if handlerObj.onEvent.OnGetFailed == nil {
+		handlerObj.onEvent.OnGetFailed = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) {
+		}
+	}
+	if handlerObj.onEvent.OnGetSuccess == nil {
+		handlerObj.onEvent.OnGetSuccess = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) {
+
+		}
+	}
+
 	return handlerObj
 }
 
@@ -87,31 +107,6 @@ func HandleError(w http.ResponseWriter, r *http.Request, outputProp *miniprop.Mi
 	}
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(outputProp.ToJson())
-}
-
-func (obj *BlobHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
-	requestValues := r.URL.Query()
-	key := requestValues.Get("key")
-	dir := requestValues.Get("dir")
-	file := requestValues.Get("file")
-
-	//
-	if key != "" {
-		w.Header().Set("Cache-Control", "public, max-age=2592000")
-		blobstore.Send(w, appengine.BlobKey(key))
-		return
-	} else {
-		ctx := appengine.NewContext(r)
-		blobObj, err := obj.manager.GetBlobItem(ctx, dir, file)
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		} else {
-			blobstore.Send(w, appengine.BlobKey(blobObj.GetBlobKey()))
-			return
-		}
-	}
 }
 
 const (
