@@ -1,4 +1,4 @@
-package miniblob
+package blob
 
 import (
 	//	"net/url"
@@ -7,45 +7,71 @@ import (
 
 	"github.com/firefirestyle/go.miniprop"
 
+	miniblob "github.com/firefirestyle/go.miniblob/blob"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 )
 
 type BlobHandlerOnEvent struct {
-	OnRequest    func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error)
-	OnBeforeSave func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error
-	OnComplete   func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error
-	OnFailed     func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem)
+	OnRequest       func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error)
+	OnBeforeSave    func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
+	OnComplete      func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
+	OnFailed        func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnDeleteRequest func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error
+	OnDeleteFailed  func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnDeleteSuccess func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
 }
 
 type BlobHandler struct {
-	manager     *BlobManager
+	manager     *miniblob.BlobManager
 	onEvent     BlobHandlerOnEvent
 	callbackUrl string
 	privateSign string
 }
 
-func (obj *BlobHandler) GetManager() *BlobManager {
+func (obj *BlobHandler) GetManager() *miniblob.BlobManager {
 	return obj.manager
 }
 
-func NewBlobHandler(callbackUrl string, privateSign string, config BlobManagerConfig, event BlobHandlerOnEvent) *BlobHandler {
+func NewBlobHandler(callbackUrl string, privateSign string, config miniblob.BlobManagerConfig, event BlobHandlerOnEvent) *BlobHandler {
 	handlerObj := new(BlobHandler)
 	handlerObj.privateSign = privateSign
 	handlerObj.callbackUrl = callbackUrl
-	handlerObj.manager = NewBlobManager(config)
+	handlerObj.manager = miniblob.NewBlobManager(config)
 	handlerObj.onEvent = event
-	handlerObj.onEvent.OnRequest = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error) {
-		return "dummy", map[string]string{}, nil
+	if handlerObj.onEvent.OnRequest == nil {
+		handlerObj.onEvent.OnRequest = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error) {
+			return "dummy", map[string]string{}, nil
+		}
 	}
-	handlerObj.onEvent.OnComplete = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error {
-		return nil
+	if handlerObj.onEvent.OnComplete == nil {
+		handlerObj.onEvent.OnComplete = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error {
+			return nil
+		}
 	}
-	handlerObj.onEvent.OnBeforeSave = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error {
-		return nil
+	if handlerObj.onEvent.OnBeforeSave == nil {
+		handlerObj.onEvent.OnBeforeSave = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error {
+			return nil
+		}
 	}
-	handlerObj.onEvent.OnFailed = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) {
+	if handlerObj.onEvent.OnFailed == nil {
+		handlerObj.onEvent.OnFailed = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) {
 
+		}
+	}
+	if handlerObj.onEvent.OnDeleteRequest == nil {
+		handlerObj.onEvent.OnDeleteRequest = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error {
+			return nil
+		}
+	}
+	if handlerObj.onEvent.OnDeleteFailed == nil {
+		handlerObj.onEvent.OnDeleteFailed = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) {
+		}
+	}
+	if handlerObj.onEvent.OnDeleteSuccess == nil {
+		handlerObj.onEvent.OnDeleteSuccess = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) {
+
+		}
 	}
 	return handlerObj
 }
