@@ -1,4 +1,4 @@
-package blob
+package handler
 
 import (
 	//	"net/url"
@@ -89,24 +89,6 @@ func HandleError(w http.ResponseWriter, r *http.Request, outputProp *miniprop.Mi
 	w.Write(outputProp.ToJson())
 }
 
-func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
-	requestValues := r.URL.Query()
-
-	dir := requestValues.Get("dir")
-	file := requestValues.Get("file")
-	//
-	ctx := appengine.NewContext(r)
-	blobObj, err := obj.manager.GetBlobItem(ctx, dir, file)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	} else {
-		obj.manager.DeleteBlobItem(ctx, blobObj)
-		return
-	}
-}
-
 func (obj *BlobHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	requestValues := r.URL.Query()
 	key := requestValues.Get("key")
@@ -139,6 +121,8 @@ const (
 	ErrorCodeBeforeSaveCheck = 3002
 	ErrorCodeCompleteCheck   = 3003
 	ErrorCodeSaveBlobItem    = 3004
+	ErrorCodeGetBlobItem     = 3005
+	ErrorCodeDeleteBlobItem  = 3006
 )
 
 func (obj *BlobHandler) HandleBlobRequestToken(w http.ResponseWriter, r *http.Request) {
