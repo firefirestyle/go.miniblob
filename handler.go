@@ -19,13 +19,10 @@ type BlobHandlerOnEvent struct {
 }
 
 type BlobHandler struct {
-	manager           *BlobManager
-	onRequest         func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error)
-	onBeforeSave      func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error
-	onComplete        func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error
-	onFailedAtRequest func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem)
-	callbackUrl       string
-	privateSign       string
+	manager     *BlobManager
+	onEvent     BlobHandlerOnEvent
+	callbackUrl string
+	privateSign string
 }
 
 func (obj *BlobHandler) GetManager() *BlobManager {
@@ -37,10 +34,19 @@ func NewBlobHandler(callbackUrl string, privateSign string, config BlobManagerCo
 	handlerObj.privateSign = privateSign
 	handlerObj.callbackUrl = callbackUrl
 	handlerObj.manager = NewBlobManager(config)
-	handlerObj.onRequest = event.OnRequest
-	handlerObj.onComplete = event.OnComplete
-	handlerObj.onBeforeSave = event.OnBeforeSave
-	handlerObj.onFailedAtRequest = event.OnFailed
+	handlerObj.onEvent = event
+	handlerObj.onEvent.OnRequest = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error) {
+		return "dummy", map[string]string{}, nil
+	}
+	handlerObj.onEvent.OnComplete = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error {
+		return nil
+	}
+	handlerObj.onEvent.OnBeforeSave = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) error {
+		return nil
+	}
+	handlerObj.onEvent.OnFailed = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *BlobItem) {
+
+	}
 	return handlerObj
 }
 
@@ -121,12 +127,12 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 	//
 	kv := "abcdef"
 	vs := map[string]string{}
-	if obj.onRequest != nil {
+	if obj.onEvent.OnRequest != nil {
 		var err error = nil
-		kv, vs, err = obj.onRequest(w, r, miniPropObj, obj)
+		kv, vs, err = obj.onEvent.OnRequest(w, r, miniPropObj, obj)
 		if err != nil {
-			if obj.onFailedAtRequest != nil {
-				obj.onFailedAtRequest(w, r, miniPropObj, obj, nil)
+			if obj.onEvent.OnFailed != nil {
+				obj.onEvent.OnFailed(w, r, miniPropObj, obj, nil)
 			}
 			HandleError(w, r, miniPropObj, ErrorCodeRequestCheck, err.Error())
 			return
@@ -136,8 +142,8 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 	uu, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
 	//
 	if err != nil {
-		if obj.onFailedAtRequest != nil {
-			obj.onFailedAtRequest(w, r, miniPropObj, obj, nil)
+		if obj.onEvent.OnFailed != nil {
+			obj.onEvent.OnFailed(w, r, miniPropObj, obj, nil)
 		}
 		HandleError(w, r, miniPropObj, ErrorCodeMakeRequestUrl, "failed to make uploadurl")
 	} else {
@@ -152,8 +158,8 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	miniPropObj := miniprop.NewMiniProp()
 	res, e := obj.manager.CheckedCallback(r, obj.privateSign)
 	if e != nil {
-		if obj.onFailedAtRequest != nil {
-			obj.onFailedAtRequest(w, r, miniPropObj, obj, nil)
+		if obj.onEvent.OnFailed != nil {
+			obj.onEvent.OnFailed(w, r, miniPropObj, obj, nil)
 		}
 		HandleError(w, r, miniPropObj, ErrorCodeCheckCallback, e.Error())
 		return
@@ -162,11 +168,11 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	//
 	ctx := appengine.NewContext(r)
 	newItem := obj.manager.NewBlobItem(ctx, res.DirName, res.FileName, res.BlobKey)
-	if obj.onBeforeSave != nil {
-		err := obj.onBeforeSave(w, r, miniPropObj, obj, newItem)
+	if obj.onEvent.OnBeforeSave != nil {
+		err := obj.onEvent.OnBeforeSave(w, r, miniPropObj, obj, newItem)
 		if err != nil {
-			if obj.onFailedAtRequest != nil {
-				obj.onFailedAtRequest(w, r, miniPropObj, obj, newItem)
+			if obj.onEvent.OnFailed != nil {
+				obj.onEvent.OnFailed(w, r, miniPropObj, obj, newItem)
 			}
 			HandleError(w, r, miniPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
 			return
@@ -174,18 +180,18 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	}
 	err2 := obj.manager.SaveBlobItem(ctx, newItem)
 	if err2 != nil {
-		if obj.onFailedAtRequest != nil {
-			obj.onFailedAtRequest(w, r, miniPropObj, obj, newItem)
+		if obj.onEvent.OnFailed != nil {
+			obj.onEvent.OnFailed(w, r, miniPropObj, obj, newItem)
 		}
 		HandleError(w, r, miniPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")
 		return
 	}
 
-	if obj.onComplete != nil {
-		err := obj.onComplete(w, r, miniPropObj, obj, newItem)
+	if obj.onEvent.OnComplete != nil {
+		err := obj.onEvent.OnComplete(w, r, miniPropObj, obj, newItem)
 		if err != nil {
-			if obj.onFailedAtRequest != nil {
-				obj.onFailedAtRequest(w, r, miniPropObj, obj, newItem)
+			if obj.onEvent.OnFailed != nil {
+				obj.onEvent.OnFailed(w, r, miniPropObj, obj, newItem)
 			}
 			HandleError(w, r, miniPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
 			return
