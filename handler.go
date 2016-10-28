@@ -44,6 +44,19 @@ func NewBlobHandler(callbackUrl string, privateSign string, config BlobManagerCo
 	return handlerObj
 }
 
+func HandleError(w http.ResponseWriter, r *http.Request, outputProp *miniprop.MiniProp, errorCode int, errorMessage string) {
+	//
+	//
+	if errorCode != 0 {
+		outputProp.SetInt("errorCode", errorCode)
+	}
+	if errorMessage != "" {
+		outputProp.SetString("errorMessage", errorMessage)
+	}
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write(outputProp.ToJson())
+}
+
 func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	requestValues := r.URL.Query()
 
@@ -112,13 +125,10 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 		var err error = nil
 		kv, vs, err = obj.onRequest(w, r, miniPropObj, obj)
 		if err != nil {
-			miniPropObj.SetInt("errorCode", ErrorCodeRequestCheck)
-			miniPropObj.SetString("errorMessage", err.Error())
 			if obj.onFailedAtRequest != nil {
 				obj.onFailedAtRequest(w, r, miniPropObj, obj, nil)
 			}
-			w.Write(miniPropObj.ToJson())
-			w.WriteHeader(http.StatusBadRequest)
+			HandleError(w, r, miniPropObj, ErrorCodeRequestCheck, err.Error())
 			return
 		}
 	}
@@ -126,13 +136,10 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 	uu, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
 	//
 	if err != nil {
-		miniPropObj.SetInt("errorCode", ErrorCodeMakeRequestUrl)
-		miniPropObj.SetString("errorMessage", "error://failed.to.make.uploadurl")
 		if obj.onFailedAtRequest != nil {
 			obj.onFailedAtRequest(w, r, miniPropObj, obj, nil)
 		}
-		w.Write(miniPropObj.ToJson())
-		w.WriteHeader(http.StatusBadRequest)
+		HandleError(w, r, miniPropObj, ErrorCodeMakeRequestUrl, "failed to make uploadurl")
 	} else {
 		miniPropObj.SetString("token", uu.String())
 		w.Write(miniPropObj.ToJson())
@@ -145,14 +152,10 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	miniPropObj := miniprop.NewMiniProp()
 	res, e := obj.manager.CheckedCallback(r, obj.privateSign)
 	if e != nil {
-		miniPropObj.SetInt("errorCode", ErrorCodeCheckCallback)
-		miniPropObj.SetString("errorMessage", e.Error())
 		if obj.onFailedAtRequest != nil {
 			obj.onFailedAtRequest(w, r, miniPropObj, obj, nil)
 		}
-
-		w.Write(miniPropObj.ToJson())
-		w.WriteHeader(http.StatusBadRequest)
+		HandleError(w, r, miniPropObj, ErrorCodeCheckCallback, e.Error())
 		return
 	}
 
@@ -162,38 +165,29 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	if obj.onBeforeSave != nil {
 		err := obj.onBeforeSave(w, r, miniPropObj, obj, newItem)
 		if err != nil {
-			miniPropObj.SetInt("errorCode", ErrorCodeBeforeSaveCheck)
-			miniPropObj.SetString("errorMessage", "Failed to check")
 			if obj.onFailedAtRequest != nil {
 				obj.onFailedAtRequest(w, r, miniPropObj, obj, newItem)
 			}
-			w.Write(miniPropObj.ToJson())
-			w.WriteHeader(http.StatusBadRequest)
+			HandleError(w, r, miniPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
 			return
 		}
 	}
 	err2 := obj.manager.SaveBlobItem(ctx, newItem)
 	if err2 != nil {
-		miniPropObj.SetInt("errorCode", ErrorCodeSaveBlobItem)
-		miniPropObj.SetString("errorMessage", "Failed to save blobitem")
 		if obj.onFailedAtRequest != nil {
 			obj.onFailedAtRequest(w, r, miniPropObj, obj, newItem)
 		}
-		w.Write(miniPropObj.ToJson())
-		w.WriteHeader(http.StatusBadRequest)
+		HandleError(w, r, miniPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")
 		return
 	}
 
 	if obj.onComplete != nil {
 		err := obj.onComplete(w, r, miniPropObj, obj, newItem)
 		if err != nil {
-			miniPropObj.SetInt("errorCode", ErrorCodeCompleteCheck)
-			miniPropObj.SetString("errorMessage", "Failed to save blobitem")
 			if obj.onFailedAtRequest != nil {
 				obj.onFailedAtRequest(w, r, miniPropObj, obj, newItem)
 			}
-			w.Write(miniPropObj.ToJson())
-			w.WriteHeader(http.StatusBadRequest)
+			HandleError(w, r, miniPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
 			return
 		}
 	}
