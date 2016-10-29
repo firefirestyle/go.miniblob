@@ -59,6 +59,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	//
 	ctx := appengine.NewContext(r)
 	newItem := obj.manager.NewBlobItem(ctx, res.DirName, res.FileName, res.BlobKey)
+	//
 	if obj.onEvent.OnBlobBeforeSave != nil {
 		err := obj.onEvent.OnBlobBeforeSave(w, r, miniPropObj, obj, newItem)
 		if err != nil {
@@ -67,7 +68,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	err2 := obj.manager.SaveBlobItem(ctx, newItem)
+	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
 		obj.onEvent.OnBlobFailed(w, r, miniPropObj, obj, newItem)
 		HandleError(w, r, miniPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")

@@ -22,7 +22,7 @@ func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	blobObj, err := obj.manager.GetBlobItem(ctx, dir, file)
+	blobObj, err := obj.manager.GetBlobItemFromPointer(ctx, dir, file)
 	if err != nil {
 		obj.onEvent.OnDeleteFailed(w, r, outputPropObj, obj, nil)
 		HandleError(w, r, outputPropObj, ErrorCodeGetBlobItem, err.Error())

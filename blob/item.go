@@ -5,6 +5,7 @@ import (
 
 	"time"
 
+	"github.com/firefirestyle/go.miniprop"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/datastore"
@@ -38,6 +39,31 @@ const (
 	TypeSign      = "Sign"
 )
 
+func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name string, blobKey string) *BlobItem {
+	ret := new(BlobItem)
+	ret.gaeObject = new(GaeObjectBlobItem)
+	ret.gaeObject.ProjectId = obj.projectId
+	ret.gaeObject.Parent = parent
+	ret.gaeObject.Name = name
+	ret.gaeObject.BlobKey = blobKey
+	ret.gaeObject.Updated = time.Now()
+	ret.gaeObject.Sign = blobKey
+	ret.gaeObjectKey = datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name, blobKey), 0, nil)
+	return ret
+}
+
+func (obj *BlobManager) NewBlobItemFromBlobItem(ctx context.Context, base *BlobItem, sign string) *BlobItem {
+	ret := new(BlobItem)
+	ret.gaeObjectKey = datastore.NewKey(ctx, //
+		obj.blobItemKind, //
+		obj.MakeStringId(base.GetParent(), base.GetName(), sign), 0, nil)
+	ret.gaeObject = new(GaeObjectBlobItem)
+	baseData := base.ToMap()
+	baseData[TypeSign] = sign
+	ret.SetParamFromMap(baseData)
+	return ret
+}
+
 func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId string) (*BlobItem, error) {
 	jsonSource, errGetJsonSource := memcache.Get(ctx, keyId)
 	if errGetJsonSource != nil {
@@ -51,26 +77,14 @@ func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId strin
 	return ret, err
 }
 
-func (obj *BlobManager) NewBlobItemKey(ctx context.Context, parent string, name string) *datastore.Key {
-	return datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name), 0, nil)
-}
-
-func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name string, blobKey string) *BlobItem {
-	ret := new(BlobItem)
-	ret.gaeObject = new(GaeObjectBlobItem)
-	ret.gaeObject.ProjectId = obj.projectId
-	ret.gaeObject.Parent = parent
-	ret.gaeObject.Name = name
-	ret.gaeObject.BlobKey = blobKey
-	ret.gaeObject.Updated = time.Now()
-	ret.gaeObjectKey = datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name), 0, nil)
-	return ret
+func (obj *BlobManager) NewBlobItemKey(ctx context.Context, parent string, name string, sign string) *datastore.Key {
+	return datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name, sign), 0, nil)
 }
 
 func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
 	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, gaeKey.StringID())
 	if errMemCcache == nil {
-		//		Debug(ctx, ">>>> from memcache "+obj.projectId+":"+gaeKey.StringID())
+		Debug(ctx, ">>>> from memcache "+obj.projectId+":"+gaeKey.StringID())
 		return memCacheObj, nil
 	}
 	//
@@ -78,9 +92,10 @@ func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey 
 	var item GaeObjectBlobItem
 	err := datastore.Get(ctx, gaeKey, &item)
 	if err != nil {
-		//		Debug(ctx, ">>>> failed to get "+obj.projectId+":"+gaeKey.StringID())
+		Debug(ctx, ">>>> failed to get "+obj.projectId+":"+gaeKey.StringID())
 		return nil, err
 	}
+	Debug(ctx, ">>>> from datastore to get "+obj.projectId+":"+gaeKey.StringID())
 	ret := new(BlobItem)
 	ret.gaeObject = &item
 	ret.gaeObjectKey = gaeKey
@@ -117,6 +132,23 @@ func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
 	return datastore.Delete(ctx, obj.gaeObjectKey)
 }
 
+func (obj *BlobManager) MakeStringId(parent string, name string, sign string) string {
+	propObj := miniprop.NewMiniProp()
+	propObj.SetString("p", obj.projectId)
+	propObj.SetString("d", parent)
+	propObj.SetString("f", name)
+	propObj.SetString("s", sign)
+	return string(propObj.ToJson())
+}
+
+func (obj *BlobManager) GetBlobId(parent string, name string) string {
+	propObj := miniprop.NewMiniProp()
+	propObj.SetString("p", obj.projectId)
+	propObj.SetString("d", parent)
+	propObj.SetString("f", name)
+	return string(propObj.ToJson())
+}
+
 func (obj *BlobItem) GetParent() string {
 	return obj.gaeObject.Parent
 }
@@ -136,3 +168,11 @@ func (obj *BlobItem) GetInfo() string {
 func (obj *BlobItem) SetInfo(v string) {
 	obj.gaeObject.Info = v
 }
+
+func (obj *BlobItem) GetSign() string {
+	return obj.gaeObject.Sign
+}
+
+/*func (obj *BlobItem) SetBlobKey(v string) {
+	obj.gaeObject.BlobKey = v
+}*/
