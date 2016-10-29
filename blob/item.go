@@ -3,8 +3,6 @@ package miniblob
 import (
 	"golang.org/x/net/context"
 
-	"encoding/json"
-
 	"time"
 
 	"google.golang.org/appengine"
@@ -21,6 +19,7 @@ type GaeObjectBlobItem struct {
 	Owner     string
 	Info      string `datastore:",noindex"`
 	Updated   time.Time
+	Sign      string `datastore:",noindex"`
 }
 
 type BlobItem struct {
@@ -36,6 +35,7 @@ const (
 	TypeOwner     = "Owner"
 	TypeInfo      = "Info"
 	TypeUpdated   = "Updated"
+	TypeSign      = "Sign"
 )
 
 func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId string) (*BlobItem, error) {
@@ -43,23 +43,12 @@ func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId strin
 	if errGetJsonSource != nil {
 		return nil, errGetJsonSource
 	}
-	v := make(map[string]interface{})
-	e := json.Unmarshal(jsonSource.Value, &v)
-	if e != nil {
-		return nil, e
-	}
 
 	ret := new(BlobItem)
 	ret.gaeObjectKey = datastore.NewKey(ctx, obj.blobItemKind, keyId, 0, nil)
 	ret.gaeObject = new(GaeObjectBlobItem)
-	ret.gaeObject.ProjectId = v[TypeProjectId].(string)
-	ret.gaeObject.Parent = v[TypeParent].(string)
-	ret.gaeObject.Name = v[TypeName].(string)
-	ret.gaeObject.BlobKey = v[TypeBlobKey].(string)
-	ret.gaeObject.Info = v[TypeInfo].(string)
-	ret.gaeObject.Updated = time.Unix(0, int64(v[TypeUpdated].(float64)))
-
-	return ret, nil
+	err := ret.SetParamFromJson(jsonSource.Value)
+	return ret, err
 }
 
 func (obj *BlobManager) NewBlobItemKey(ctx context.Context, parent string, name string) *datastore.Key {
@@ -102,22 +91,8 @@ func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey 
 	return ret, nil
 }
 
-func (obj *BlobItem) toJson() (string, error) {
-	v := map[string]interface{}{
-		TypeProjectId: obj.gaeObject.ProjectId,
-		TypeParent:    obj.gaeObject.Parent,
-		TypeName:      obj.gaeObject.Name,
-		TypeBlobKey:   obj.gaeObject.BlobKey,
-		TypeOwner:     obj.gaeObject.Owner,
-		TypeInfo:      obj.gaeObject.Info,
-		TypeUpdated:   obj.gaeObject.Updated.UnixNano(),
-	}
-	vv, e := json.Marshal(v)
-	return string(vv), e
-}
-
 func (obj *BlobItem) updateMemcache(ctx context.Context) error {
-	userObjMemSource, err_toJson := obj.toJson()
+	userObjMemSource, err_toJson := obj.ToJson()
 	if err_toJson == nil {
 		userObjMem := &memcache.Item{
 			Key:   obj.gaeObjectKey.StringID(),
