@@ -82,9 +82,11 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)
 	io.WriteString(hash, privateSign)
+	io.WriteString(hash, optKeyValue["kw"])
 
 	//
 	callbackValue.Add("kv", publicSign)
+
 	io.WriteString(hash, publicSign)
 	if optKeyValue != nil {
 		for k, v := range optKeyValue {
@@ -113,12 +115,14 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 	dirName := r.FormValue("dir")
 	fileName := r.FormValue("file")
 	kv := r.FormValue("kv")
+
 	hash := sha1.New()
 	io.WriteString(hash, obj.projectId)
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)
 	io.WriteString(hash, privateSign)
+	io.WriteString(hash, r.FormValue("kw"))
 	if kv != "" {
 		io.WriteString(hash, kv)
 	}

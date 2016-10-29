@@ -8,6 +8,8 @@ import (
 	"github.com/firefirestyle/go.miniprop"
 
 	miniblob "github.com/firefirestyle/go.miniblob/blob"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine/log"
 	//	"google.golang.org/appengine"
 	//	"google.golang.org/appengine/blobstore"
 )
@@ -119,3 +121,7 @@ const (
 	ErrorCodeGetBlobItem     = 3005
 	ErrorCodeDeleteBlobItem  = 3006
 )
+
+func Debug(ctx context.Context, message string) {
+	log.Infof(ctx, message)
+}

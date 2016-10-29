@@ -74,13 +74,12 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if obj.onEvent.OnBlobComplete != nil {
-		err := obj.onEvent.OnBlobComplete(w, r, miniPropObj, obj, newItem)
-		if err != nil {
-			obj.onEvent.OnBlobFailed(w, r, miniPropObj, obj, newItem)
-			HandleError(w, r, miniPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
-			return
-		}
+	Debug(ctx, "onBlobComplete --s")
+	err3 := obj.onEvent.OnBlobComplete(w, r, miniPropObj, obj, newItem)
+	if err3 != nil {
+		obj.onEvent.OnBlobFailed(w, r, miniPropObj, obj, newItem)
+		HandleError(w, r, miniPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
+		return
 	}
 	miniPropObj.SetString("blobkey", newItem.GetBlobKey())
 	w.Write(miniPropObj.ToJson())
