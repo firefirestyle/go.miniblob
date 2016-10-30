@@ -3,6 +3,7 @@ package handler
 import (
 	//	"net/url"
 
+	"io/ioutil"
 	"net/http"
 
 	"github.com/firefirestyle/go.miniprop"
@@ -13,21 +14,26 @@ import (
 )
 
 func (obj *BlobHandler) HandleBlobRequestToken(w http.ResponseWriter, r *http.Request) {
-	requestValues := r.URL.Query()
-	dirName := requestValues.Get("dir")
-	fileName := requestValues.Get("file")
-	obj.HandleBlobRequestTokenFromParams(w, r, dirName, fileName)
+	params, _ := ioutil.ReadAll(r.Body)
+	inputPropObj := miniprop.NewMiniPropFromJson(params)
+	dirName := inputPropObj.GetString("dir", "")
+	fileName := inputPropObj.GetString("file", "")
+	obj.HandleBlobRequestTokenFromParams(w, r, dirName, fileName, inputPropObj)
 }
 
-func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, r *http.Request, dirName string, fileName string) {
+func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, r *http.Request, dirName string, fileName string, inputPropObj *miniprop.MiniProp) {
 	ctx := appengine.NewContext(r)
 	outputPropObj := miniprop.NewMiniProp()
+	if inputPropObj == nil {
+		params, _ := ioutil.ReadAll(r.Body)
+		inputPropObj = miniprop.NewMiniPropFromJson(params)
+	}
 	//
 	kv := "abcdef"
 	vs := map[string]string{}
 	{
 		var err error = nil
-		kv, vs, err = obj.onEvent.OnBlobRequest(w, r, outputPropObj, obj)
+		kv, vs, err = obj.onEvent.OnBlobRequest(w, r, inputPropObj, outputPropObj, obj)
 		if err != nil {
 			obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, nil)
 			HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, err.Error())
@@ -48,11 +54,11 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 
 func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	//
-	miniPropObj := miniprop.NewMiniProp()
+	outputPropObj := miniprop.NewMiniProp()
 	res, e := obj.manager.CheckedCallback(r, obj.privateSign)
 	if e != nil {
-		obj.onEvent.OnBlobFailed(w, r, miniPropObj, obj, nil)
-		HandleError(w, r, miniPropObj, ErrorCodeCheckCallback, e.Error())
+		obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, nil)
+		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, e.Error())
 		return
 	}
 
@@ -61,28 +67,28 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	newItem := obj.manager.NewBlobItem(ctx, res.DirName, res.FileName, res.BlobKey)
 	//
 	if obj.onEvent.OnBlobBeforeSave != nil {
-		err := obj.onEvent.OnBlobBeforeSave(w, r, miniPropObj, obj, newItem)
+		err := obj.onEvent.OnBlobBeforeSave(w, r, outputPropObj, obj, newItem)
 		if err != nil {
-			obj.onEvent.OnBlobFailed(w, r, miniPropObj, obj, newItem)
-			HandleError(w, r, miniPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
+			obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, newItem)
+			HandleError(w, r, outputPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
 			return
 		}
 	}
 	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
-		obj.onEvent.OnBlobFailed(w, r, miniPropObj, obj, newItem)
-		HandleError(w, r, miniPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")
+		obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, newItem)
+		HandleError(w, r, outputPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")
 		return
 	}
 
 	Debug(ctx, "onBlobComplete --s")
-	err3 := obj.onEvent.OnBlobComplete(w, r, miniPropObj, obj, newItem)
+	err3 := obj.onEvent.OnBlobComplete(w, r, outputPropObj, obj, newItem)
 	if err3 != nil {
-		obj.onEvent.OnBlobFailed(w, r, miniPropObj, obj, newItem)
-		HandleError(w, r, miniPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
+		obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, newItem)
+		HandleError(w, r, outputPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
 		return
 	}
-	miniPropObj.SetString("blobkey", newItem.GetBlobKey())
-	w.Write(miniPropObj.ToJson())
+	outputPropObj.SetString("blobkey", newItem.GetBlobKey())
+	w.Write(outputPropObj.ToJson())
 	w.WriteHeader(http.StatusOK)
 }

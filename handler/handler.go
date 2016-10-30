@@ -12,10 +12,11 @@ import (
 	"google.golang.org/appengine/log"
 	//	"google.golang.org/appengine"
 	//	"google.golang.org/appengine/blobstore"
+	//	"errors"
 )
 
 type BlobHandlerOnEvent struct {
-	OnBlobRequest    func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error)
+	OnBlobRequest    func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (string, map[string]string, error)
 	OnBlobBeforeSave func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
 	OnBlobComplete   func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
 	OnBlobFailed     func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
@@ -45,7 +46,8 @@ func NewBlobHandler(callbackUrl string, privateSign string, config miniblob.Blob
 	handlerObj.manager = miniblob.NewBlobManager(config)
 	handlerObj.onEvent = event
 	if handlerObj.onEvent.OnBlobRequest == nil {
-		handlerObj.onEvent.OnBlobRequest = func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) (string, map[string]string, error) {
+		handlerObj.onEvent.OnBlobRequest = func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (string, map[string]string, error) {
+
 			return "dummy", map[string]string{}, nil
 		}
 	}
