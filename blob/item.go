@@ -52,18 +52,6 @@ func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name str
 	return ret
 }
 
-func (obj *BlobManager) NewBlobItemFromBlobItem(ctx context.Context, base *BlobItem, sign string) *BlobItem {
-	ret := new(BlobItem)
-	ret.gaeObjectKey = datastore.NewKey(ctx, //
-		obj.blobItemKind, //
-		obj.MakeStringId(base.GetParent(), base.GetName(), sign), 0, nil)
-	ret.gaeObject = new(GaeObjectBlobItem)
-	baseData := base.ToMap()
-	baseData[TypeSign] = sign
-	ret.SetParamFromMap(baseData)
-	return ret
-}
-
 func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId string) (*BlobItem, error) {
 	jsonSource, errGetJsonSource := memcache.Get(ctx, keyId)
 	if errGetJsonSource != nil {
