@@ -3,13 +3,10 @@ package miniblob
 import (
 	"bytes"
 	"net/http"
-	//"net/url"
 
 	"golang.org/x/net/context"
 
 	"mime/multipart"
-
-	//"io"
 
 	"google.golang.org/appengine/blobstore"
 	"google.golang.org/appengine/urlfetch"
