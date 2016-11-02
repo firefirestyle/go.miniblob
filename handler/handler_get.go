@@ -16,6 +16,11 @@ func (obj *BlobHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	dir := requestValues.Get("dir")
 	file := requestValues.Get("file")
 
+	obj.HandleGetBase(w, r, key, dir, file)
+}
+
+func (obj *BlobHandler) HandleGetBase(w http.ResponseWriter, r *http.Request, key, dir, file string) {
+
 	//
 	outputPropObj := miniprop.NewMiniProp()
 	errReqCheck := obj.onEvent.OnGetRequest(w, r, outputPropObj, obj)
