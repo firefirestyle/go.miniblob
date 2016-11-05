@@ -14,6 +14,9 @@ import (
 	"strings"
 
 	//	"github.com/firefirestyle/go.miniprop"
+	"sort"
+
+	"github.com/firefirestyle/go.miniprop"
 	"google.golang.org/appengine/blobstore"
 )
 
@@ -22,6 +25,9 @@ import (
 //
 
 func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, fileName string, publicSign string, privateSign string, optKeyValue map[string]string) (*url.URL, error) {
+	if optKeyValue == nil {
+		optKeyValue = map[string]string{}
+	}
 	//
 	//
 	callbackUrlObj, _ := url.Parse(obj.callbackUrl)
@@ -30,21 +36,35 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	callbackValue.Add("file", fileName)
 	//
 	hash := sha1.New()
+	//
+	// [keys]
+	//
+	keys := make([]string, 0)
+	for k, _ := range optKeyValue {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	propObj := miniprop.NewMiniProp()
+	propObj.SetPropStringList("", "k", keys)
+	//
+	//
 	io.WriteString(hash, obj.rootGroup)
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)
+	io.WriteString(hash, publicSign)
+
+	for _, k := range keys {
+		io.WriteString(hash, optKeyValue[k])
+	}
+	io.WriteString(hash, string(propObj.ToJson()))
 	io.WriteString(hash, privateSign)
-	io.WriteString(hash, optKeyValue["kw"])
 
 	//
 	callbackValue.Add("kv", publicSign)
-
-	io.WriteString(hash, publicSign)
-	if optKeyValue != nil {
-		for k, v := range optKeyValue {
-			callbackValue.Add(k, v)
-		}
+	callbackValue.Add("keys", string(propObj.ToJson()))
+	for k, v := range optKeyValue {
+		callbackValue.Add(k, v)
 	}
 	callbackValue.Add("hash", base64.StdEncoding.EncodeToString(hash.Sum(nil)))
 	callbackUrlObj.RawQuery = callbackValue.Encode()
@@ -70,15 +90,27 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 	kv := r.FormValue("kv")
 
 	hash := sha1.New()
+	//
+	// [keys]
+	//
+	keysSrc := r.FormValue("keys")
+	propObj := miniprop.NewMiniPropFromJson([]byte(keysSrc))
+	keys := propObj.GetPropStringList("", "k", make([]string, 0))
+	sort.Strings(keys)
+	//
+	//
 	io.WriteString(hash, obj.rootGroup)
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)
-	io.WriteString(hash, privateSign)
-	io.WriteString(hash, r.FormValue("kw"))
-	if kv != "" {
-		io.WriteString(hash, kv)
+	io.WriteString(hash, kv)
+
+	for _, k := range keys {
+		io.WriteString(hash, r.FormValue(k))
 	}
+	io.WriteString(hash, keysSrc)
+	io.WriteString(hash, privateSign)
+
 	calcHash := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 	if 0 != strings.Compare(calcHash, hashValue) {
 		return nil, errors.New("faied to check hash")

@@ -29,13 +29,13 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 		inputPropObj = miniprop.NewMiniPropFromJson(params)
 	}
 	//
-	kv := "abcdef"
+	kv := miniprop.MakeRandomId()
 	vs := map[string]string{}
 	{
 		vsTmp := map[string]string{}
 		var err error = nil
 		for _, f := range obj.onEvent.OnBlobRequestList {
-			kv, vsTmp, err = f(w, r, inputPropObj, outputPropObj, obj)
+			vsTmp, err = f(w, r, inputPropObj, outputPropObj, obj)
 			if err != nil {
 				for _, ff := range obj.onEvent.OnBlobFailedList {
 					ff(w, r, outputPropObj, obj, nil)

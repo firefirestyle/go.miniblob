@@ -11,7 +11,7 @@ import (
 )
 
 type BlobHandlerOnEvent struct {
-	OnBlobRequestList    []func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (string, map[string]string, error)
+	OnBlobRequestList    []func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (map[string]string, error)
 	OnBlobBeforeSaveList []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
 	OnBlobCompleteList   []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
 	OnBlobFailedList     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
@@ -30,7 +30,7 @@ type BlobHandler struct {
 	privateSign string
 }
 
-func (obj *BlobHandler) AddOnBlobRequest(f func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (string, map[string]string, error)) {
+func (obj *BlobHandler) AddOnBlobRequest(f func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (map[string]string, error)) {
 	obj.onEvent.OnBlobRequestList = append(obj.onEvent.OnBlobRequestList, f)
 }
 
