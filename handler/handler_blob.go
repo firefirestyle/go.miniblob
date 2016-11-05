@@ -32,18 +32,28 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 	kv := "abcdef"
 	vs := map[string]string{}
 	{
+		vsTmp := map[string]string{}
 		var err error = nil
-		kv, vs, err = obj.onEvent.OnBlobRequest(w, r, inputPropObj, outputPropObj, obj)
-		if err != nil {
-			obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, nil)
-			HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, err.Error())
-			return
+		for _, f := range obj.onEvent.OnBlobRequest {
+			kv, vsTmp, err = f(w, r, inputPropObj, outputPropObj, obj)
+			if err != nil {
+				for _, ff := range obj.onEvent.OnBlobFailed {
+					ff(w, r, outputPropObj, obj, nil)
+				}
+				HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, err.Error())
+				return
+			}
+			for k, v := range vsTmp {
+				vs[k] = v
+			}
 		}
 	}
 	uu, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
 	//
 	if err != nil {
-		obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, nil)
+		for _, ff := range obj.onEvent.OnBlobFailed {
+			ff(w, r, outputPropObj, obj, nil)
+		}
 		HandleError(w, r, outputPropObj, ErrorCodeMakeRequestUrl, "failed to make uploadurl")
 	} else {
 		outputPropObj.SetString("token", uu.String())
@@ -57,7 +67,9 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	outputPropObj := miniprop.NewMiniProp()
 	res, e := obj.manager.CheckedCallback(r, obj.privateSign)
 	if e != nil {
-		obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, nil)
+		for _, ff := range obj.onEvent.OnBlobFailed {
+			ff(w, r, outputPropObj, obj, nil)
+		}
 		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, e.Error())
 		return
 	}
@@ -67,26 +79,38 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	newItem := obj.manager.NewBlobItem(ctx, res.DirName, res.FileName, res.BlobKey)
 	//
 	if obj.onEvent.OnBlobBeforeSave != nil {
-		err := obj.onEvent.OnBlobBeforeSave(w, r, outputPropObj, obj, newItem)
-		if err != nil {
-			obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-			HandleError(w, r, outputPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
-			return
+		for _, f := range obj.onEvent.OnBlobBeforeSave {
+			err := f(w, r, outputPropObj, obj, newItem)
+			if err != nil {
+				for _, ff := range obj.onEvent.OnBlobFailed {
+					ff(w, r, outputPropObj, obj, newItem)
+				}
+				HandleError(w, r, outputPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
+				return
+			}
 		}
 	}
 	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
-		obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, newItem)
+		for _, ff := range obj.onEvent.OnBlobFailed {
+			ff(w, r, outputPropObj, obj, newItem)
+		}
+
 		HandleError(w, r, outputPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")
 		return
 	}
 
 	Debug(ctx, "onBlobComplete --s")
-	err3 := obj.onEvent.OnBlobComplete(w, r, outputPropObj, obj, newItem)
-	if err3 != nil {
-		obj.onEvent.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-		HandleError(w, r, outputPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
-		return
+	for _, f := range obj.onEvent.OnBlobComplete {
+		err3 := f(w, r, outputPropObj, obj, newItem)
+		if err3 != nil {
+			for _, ff := range obj.onEvent.OnBlobFailed {
+				ff(w, r, outputPropObj, obj, newItem)
+			}
+
+			HandleError(w, r, outputPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
+			return
+		}
 	}
 	outputPropObj.SetString("blobkey", newItem.GetBlobKey())
 	w.Write(outputPropObj.ToJson())
