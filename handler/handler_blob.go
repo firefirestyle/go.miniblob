@@ -11,6 +11,8 @@ import (
 	//	miniblob "github.com/firefirestyle/go.miniblob/blob"
 	"google.golang.org/appengine"
 	//	"google.golang.org/appengine/blobstore"
+	"strconv"
+	"time"
 )
 
 func (obj *BlobHandler) HandleBlobRequestToken(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +31,8 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 		inputPropObj = miniprop.NewMiniPropFromJson(params)
 	}
 	//
-	kv := miniprop.MakeRandomId()
+	//
+	kv := strconv.FormatInt(time.Now().Unix(), 36)
 	vs := map[string]string{}
 	{
 		vsTmp := map[string]string{}
@@ -71,6 +74,15 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 			ff(w, r, outputPropObj, obj, nil)
 		}
 		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, e.Error())
+		return
+	}
+	curTime := time.Now().Unix()
+	kvTime, errTime := strconv.ParseInt(r.FormValue("kv"), 36, 64)
+	if errTime != nil || !(curTime-60*1 < kvTime && kvTime < curTime+60*10) {
+		for _, ff := range obj.onEvent.OnBlobFailedList {
+			ff(w, r, outputPropObj, obj, nil)
+		}
+		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, "kv time error")
 		return
 	}
 
