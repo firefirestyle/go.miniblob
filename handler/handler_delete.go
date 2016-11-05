@@ -16,7 +16,7 @@ func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	file := requestValues.Get("file")
 	ctx := appengine.NewContext(r)
 	{
-		for _, ff := range obj.onEvent.OnDeleteRequest {
+		for _, ff := range obj.onEvent.OnDeleteRequestList {
 			err := ff(w, r, outputPropObj, obj)
 			if err != nil {
 				HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, err.Error())
@@ -26,7 +26,7 @@ func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	blobObj, err := obj.manager.GetBlobItemFromPointer(ctx, dir, file)
 	if err != nil {
-		for _, ff := range obj.onEvent.OnDeleteFailed {
+		for _, ff := range obj.onEvent.OnDeleteFailedList {
 			ff(w, r, outputPropObj, obj, nil)
 		}
 		HandleError(w, r, outputPropObj, ErrorCodeGetBlobItem, err.Error())
@@ -34,12 +34,12 @@ func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	} else {
 		errDelete := obj.manager.DeleteBlobItem(ctx, blobObj)
 		if errDelete != nil {
-			for _, ff := range obj.onEvent.OnDeleteFailed {
+			for _, ff := range obj.onEvent.OnDeleteFailedList {
 				ff(w, r, outputPropObj, obj, blobObj)
 			}
 			HandleError(w, r, outputPropObj, ErrorCodeDeleteBlobItem, err.Error())
 		} else {
-			for _, f := range obj.onEvent.OnDeleteSuccess {
+			for _, f := range obj.onEvent.OnDeleteSuccessList {
 				f(w, r, outputPropObj, obj, blobObj)
 			}
 		}

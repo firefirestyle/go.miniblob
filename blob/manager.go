@@ -22,12 +22,12 @@ import (
 type BlobManager struct {
 	callbackUrl  string
 	blobItemKind string
-	projectId    string
+	rootGroup    string
 	pointerMgr   *minipointer.PointerManager
 }
 
 type BlobManagerConfig struct {
-	ProjectId   string
+	RootGroup   string
 	Kind        string
 	PointerKind string
 	CallbackUrl string
@@ -35,11 +35,11 @@ type BlobManagerConfig struct {
 
 func NewBlobManager(config BlobManagerConfig) *BlobManager {
 	ret := new(BlobManager)
-	ret.projectId = config.ProjectId
+	ret.rootGroup = config.RootGroup
 	ret.blobItemKind = config.Kind
 	ret.callbackUrl = config.CallbackUrl
 	ret.pointerMgr = minipointer.NewPointerManager(minipointer.PointerManagerConfig{
-		ProjectId: config.ProjectId,
+		RootGroup: config.RootGroup,
 		Kind:      config.PointerKind,
 	})
 	return ret
@@ -111,7 +111,7 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	callbackValue.Add("file", fileName)
 	//
 	hash := sha1.New()
-	io.WriteString(hash, obj.projectId)
+	io.WriteString(hash, obj.rootGroup)
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)
@@ -151,7 +151,7 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 	kv := r.FormValue("kv")
 
 	hash := sha1.New()
-	io.WriteString(hash, obj.projectId)
+	io.WriteString(hash, obj.rootGroup)
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
 	io.WriteString(hash, fileName)

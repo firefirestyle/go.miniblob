@@ -1,8 +1,6 @@
 package handler
 
 import (
-	//	"net/url"
-
 	"net/http"
 
 	"github.com/firefirestyle/go.miniprop"
@@ -10,22 +8,19 @@ import (
 	miniblob "github.com/firefirestyle/go.miniblob/blob"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/log"
-	//	"google.golang.org/appengine"
-	//	"google.golang.org/appengine/blobstore"
-	//	"errors"
 )
 
 type BlobHandlerOnEvent struct {
-	OnBlobRequest    []func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (string, map[string]string, error)
-	OnBlobBeforeSave []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
-	OnBlobComplete   []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
-	OnBlobFailed     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
-	OnDeleteRequest  []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error
-	OnDeleteFailed   []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
-	OnDeleteSuccess  []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
-	OnGetRequest     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error
-	OnGetFailed      []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
-	OnGetSuccess     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnBlobRequestList    []func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (string, map[string]string, error)
+	OnBlobBeforeSaveList []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
+	OnBlobCompleteList   []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error
+	OnBlobFailedList     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnDeleteRequestList  []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error
+	OnDeleteFailedList   []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnDeleteSuccessList  []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnGetRequestList     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error
+	OnGetFailedList      []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+	OnGetSuccessList     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
 }
 
 type BlobHandler struct {

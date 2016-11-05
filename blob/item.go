@@ -13,7 +13,7 @@ import (
 )
 
 type GaeObjectBlobItem struct {
-	ProjectId string
+	RootGroup string
 	Parent    string
 	Name      string
 	BlobKey   string
@@ -29,7 +29,7 @@ type BlobItem struct {
 }
 
 const (
-	TypeProjectId = "ProjectId"
+	TypeRootGroup = "RootGroup"
 	TypeParent    = "Parent"
 	TypeName      = "Name"
 	TypeBlobKey   = "BlobKey"
@@ -42,7 +42,7 @@ const (
 func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name string, blobKey string) *BlobItem {
 	ret := new(BlobItem)
 	ret.gaeObject = new(GaeObjectBlobItem)
-	ret.gaeObject.ProjectId = obj.projectId
+	ret.gaeObject.RootGroup = obj.rootGroup
 	ret.gaeObject.Parent = parent
 	ret.gaeObject.Name = name
 	ret.gaeObject.BlobKey = blobKey
@@ -72,7 +72,7 @@ func (obj *BlobManager) NewBlobItemKey(ctx context.Context, parent string, name 
 func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
 	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, gaeKey.StringID())
 	if errMemCcache == nil {
-		Debug(ctx, ">>>> from memcache "+obj.projectId+":"+gaeKey.StringID())
+		Debug(ctx, ">>>> from memcache "+obj.rootGroup+":"+gaeKey.StringID())
 		return memCacheObj, nil
 	}
 	//
@@ -80,10 +80,10 @@ func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey 
 	var item GaeObjectBlobItem
 	err := datastore.Get(ctx, gaeKey, &item)
 	if err != nil {
-		Debug(ctx, ">>>> failed to get "+obj.projectId+":"+gaeKey.StringID())
+		Debug(ctx, ">>>> failed to get "+obj.rootGroup+":"+gaeKey.StringID())
 		return nil, err
 	}
-	Debug(ctx, ">>>> from datastore to get "+obj.projectId+":"+gaeKey.StringID())
+	Debug(ctx, ">>>> from datastore to get "+obj.rootGroup+":"+gaeKey.StringID())
 	ret := new(BlobItem)
 	ret.gaeObject = &item
 	ret.gaeObjectKey = gaeKey
@@ -122,7 +122,7 @@ func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
 
 func (obj *BlobManager) MakeStringId(parent string, name string, sign string) string {
 	propObj := miniprop.NewMiniProp()
-	propObj.SetString("p", obj.projectId)
+	propObj.SetString("p", obj.rootGroup)
 	propObj.SetString("d", parent)
 	propObj.SetString("f", name)
 	propObj.SetString("s", sign)
@@ -131,7 +131,7 @@ func (obj *BlobManager) MakeStringId(parent string, name string, sign string) st
 
 func (obj *BlobManager) GetBlobId(parent string, name string) string {
 	propObj := miniprop.NewMiniProp()
-	propObj.SetString("p", obj.projectId)
+	propObj.SetString("p", obj.rootGroup)
 	propObj.SetString("d", parent)
 	propObj.SetString("f", name)
 	return string(propObj.ToJson())

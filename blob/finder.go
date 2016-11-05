@@ -23,7 +23,7 @@ https://cloud.google.com/appengine/docs/go/config/indexconfig#updating_indexes
 func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent string, cursorSrc string) ([]*BlobItem, string, string) {
 	//
 	q := datastore.NewQuery(obj.blobItemKind)
-	q = q.Filter("ProjectId =", obj.projectId)
+	q = q.Filter("ProjectId =", obj.rootGroup)
 	q = q.Filter("Parent =", parent)
 	q = q.Order("-Updated")
 	//

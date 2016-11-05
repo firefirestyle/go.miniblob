@@ -10,7 +10,7 @@ import (
 
 func (obj *BlobItem) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		TypeProjectId: obj.gaeObject.ProjectId,
+		TypeRootGroup: obj.gaeObject.RootGroup,
 		TypeParent:    obj.gaeObject.Parent,
 		TypeName:      obj.gaeObject.Name,
 		TypeBlobKey:   obj.gaeObject.BlobKey,
@@ -38,7 +38,7 @@ func (obj *BlobItem) SetParamFromJson(source []byte) error {
 
 func (obj *BlobItem) SetParamFromMap(values map[string]interface{}) {
 	propObj := miniprop.NewMiniPropFromMap(values)
-	obj.gaeObject.ProjectId = propObj.GetString(TypeProjectId, "")
+	obj.gaeObject.RootGroup = propObj.GetString(TypeRootGroup, "")
 	obj.gaeObject.Parent = propObj.GetString(TypeParent, "")
 	obj.gaeObject.Name = propObj.GetString(TypeName, "")
 	obj.gaeObject.BlobKey = propObj.GetString(TypeBlobKey, "")
