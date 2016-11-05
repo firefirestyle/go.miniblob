@@ -30,6 +30,56 @@ type BlobHandler struct {
 	privateSign string
 }
 
+func (obj *BlobHandler) AddOnBlobRequest(f func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (string, map[string]string, error)) {
+	obj.onEvent.OnBlobRequestList = append(obj.onEvent.OnBlobRequestList, f)
+}
+
+func (obj *BlobHandler) AddOnBlobBeforeSave(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error) {
+	obj.onEvent.OnBlobBeforeSaveList = append(obj.onEvent.OnBlobBeforeSaveList, f)
+}
+
+func (obj *BlobHandler) AddOnBlobComplete(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error) {
+	obj.onEvent.OnBlobCompleteList = append(obj.onEvent.OnBlobCompleteList, f)
+}
+
+func (obj *BlobHandler) AddOnBlobFailed(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
+	obj.onEvent.OnBlobFailedList = append(obj.onEvent.OnBlobFailedList, f)
+}
+
+func (obj *BlobHandler) AddOnDeleteRequest(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error) {
+	obj.onEvent.OnDeleteRequestList = append(obj.onEvent.OnDeleteRequestList, f)
+}
+
+func (obj *BlobHandler) AddOnDeleteFailed(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
+	obj.onEvent.OnDeleteFailedList = append(obj.onEvent.OnDeleteFailedList, f)
+}
+
+func (obj *BlobHandler) AddOnDeleteSuccess(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
+	obj.onEvent.OnDeleteSuccessList = append(obj.onEvent.OnDeleteSuccessList, f)
+}
+
+func (obj *BlobHandler) AddOnGetRequest(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error) {
+	obj.onEvent.OnGetRequestList = append(obj.onEvent.OnGetRequestList, f)
+}
+
+func (obj *BlobHandler) AddOnGetFailed(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
+	obj.onEvent.OnGetFailedList = append(obj.onEvent.OnGetFailedList, f)
+}
+
+func (obj *BlobHandler) AddOnGetSuccess(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
+	obj.onEvent.OnGetSuccessList = append(obj.onEvent.OnGetSuccessList, f)
+}
+
+//
+//
+//
+//func (obj *BlobHandler) GetBlobHandleEvent() *BlobHandlerOnEvent {
+//	return &obj.onEvent
+//}
+//
+//
+//
+//
 func (obj *BlobHandler) GetManager() *miniblob.BlobManager {
 	return obj.manager
 }
@@ -41,10 +91,6 @@ func NewBlobHandler(callbackUrl string, privateSign string, config miniblob.Blob
 	handlerObj.manager = miniblob.NewBlobManager(config)
 	handlerObj.onEvent = BlobHandlerOnEvent{}
 	return handlerObj
-}
-
-func (obj *BlobHandler) GetBlobHandleEvent() *BlobHandlerOnEvent {
-	return &obj.onEvent
 }
 
 func HandleError(w http.ResponseWriter, r *http.Request, outputProp *miniprop.MiniProp, errorCode int, errorMessage string) {
