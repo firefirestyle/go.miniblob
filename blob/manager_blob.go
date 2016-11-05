@@ -3,6 +3,7 @@ package miniblob
 import (
 	"golang.org/x/net/context"
 	//	"google.golang.org/appengine"
+	"crypto/hmac"
 	"crypto/sha1"
 	"errors"
 	"net/http"
@@ -35,7 +36,6 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	callbackValue.Add("dir", dirName)
 	callbackValue.Add("file", fileName)
 	//
-	hash := sha1.New()
 	//
 	// [keys]
 	//
@@ -48,6 +48,9 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	propObj.SetPropStringList("", "k", keys)
 	//
 	//
+	hash := hmac.New(sha1.New, []byte(privateSign))
+	//	hash := sha1.New()
+
 	io.WriteString(hash, obj.rootGroup)
 	io.WriteString(hash, dirName)
 	io.WriteString(hash, obj.blobItemKind)
@@ -89,7 +92,8 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 	fileName := r.FormValue("file")
 	kv := r.FormValue("kv")
 
-	hash := sha1.New()
+	//	hash := sha1.New()
+	hash := hmac.New(sha1.New, []byte(privateSign))
 	//
 	// [keys]
 	//
