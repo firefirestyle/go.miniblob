@@ -35,20 +35,23 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 	return ret
 }
 
+func (obj *BlobManager) GetPointerMgr() *minipointer.PointerManager {
+	return obj.pointerMgr
+}
 func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name string, sign string) (*BlobItem, error) {
 	key := obj.NewBlobItemKey(ctx, parent, name, sign)
-	Debug(ctx, "KEY ============="+key.StringID())
 
 	return obj.NewBlobItemFromGaeObjectKey(ctx, key)
 }
 
-func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent string, name string) (*BlobItem, error) {
+func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent string, name string) (*BlobItem, *minipointer.Pointer, error) {
 	pointerObj, pointerErr := obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 	if pointerErr != nil {
-		return nil, pointerErr
+		return nil, nil, pointerErr
 	}
 
-	return obj.GetBlobItem(ctx, parent, name, pointerObj.GetSign())
+	retObj, retErr := obj.GetBlobItem(ctx, parent, name, pointerObj.GetSign())
+	return retObj, pointerObj, retErr
 }
 
 func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *BlobItem) error {
@@ -57,11 +60,12 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 		return errSave
 	}
 
-	currItem, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
+	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
 	pointerObj := obj.pointerMgr.GetPointerForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
 
 	pointerObj.SetSign(newItem.GetBlobKey())
 	pointerObj.SetValue(newItem.gaeObjectKey.StringID())
+	pointerObj.SetOwner(newItem.gaeObject.Owner)
 	pointerErr := pointerObj.Save(ctx)
 	if pointerErr != nil {
 		err := newItem.deleteFromDB(ctx)
@@ -86,6 +90,44 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 
 func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) error {
 	return item.deleteFromDB(ctx)
+}
+
+//
+//
+
+//
+// you must to delete file before call this method, if there are many articleid's file.
+//
+func (obj *BlobManager) DeleteBlobItemsFormOnwer(ctx context.Context, owner string) error {
+	pointerMgr := obj.GetPointerMgr()
+	cursor := ""
+	founded := pointerMgr.FindFromOwner(ctx, cursor, owner)
+	for {
+		if len(founded.Keys) <= 0 {
+			Debug(ctx, "<E1>")
+			break
+		}
+		for _, v := range founded.Keys {
+			Debug(ctx, "<K> "+v)
+			pointerKeyInfo := pointerMgr.GetKeyInfoFromStringId(v)
+			blobitemKeyInfo := obj.GetKeyInfoFromStringId(pointerKeyInfo.Identify)
+			//
+			blobitemObj, pointerObj, _ := obj.GetBlobItemFromPointer(ctx, blobitemKeyInfo.Parent, blobitemKeyInfo.Name)
+			if blobitemObj != nil {
+				obj.DeleteBlobItem(ctx, blobitemObj)
+			}
+			if pointerObj != nil {
+				pointerMgr.Delete(ctx, pointerKeyInfo.Identify, pointerKeyInfo.IdentifyType)
+			}
+		}
+		prevFounded := founded
+		founded = pointerMgr.FindFromOwner(ctx, founded.CursorNext, owner)
+		if founded.CursorOne == prevFounded.CursorOne {
+			Debug(ctx, "<E2>")
+			break
+		}
+	}
+	return nil
 }
 
 func Debug(ctx context.Context, message string) {

@@ -120,6 +120,23 @@ func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
 	return datastore.Delete(ctx, obj.gaeObjectKey)
 }
 
+type BlobItemKeyInfo struct {
+	RootGrouo string
+	Parent    string
+	Name      string
+	Sign      string
+}
+
+func (obj *BlobManager) GetKeyInfoFromStringId(stringId string) BlobItemKeyInfo {
+	propObj := miniprop.NewMiniPropFromJson([]byte(stringId))
+	return BlobItemKeyInfo{
+		RootGrouo: propObj.GetString("p", ""),
+		Parent:    propObj.GetString("d", ""),
+		Name:      propObj.GetString("f", ""),
+		Sign:      propObj.GetString("s", ""),
+	}
+}
+
 func (obj *BlobManager) MakeStringId(parent string, name string, sign string) string {
 	propObj := miniprop.NewMiniProp()
 	propObj.SetString("p", obj.rootGroup)
@@ -159,6 +176,14 @@ func (obj *BlobItem) SetInfo(v string) {
 
 func (obj *BlobItem) GetSign() string {
 	return obj.gaeObject.Sign
+}
+
+func (obj *BlobItem) GetOwner() string {
+	return obj.gaeObject.Owner
+}
+
+func (obj *BlobItem) SetOwner(v string) {
+	obj.gaeObject.Owner = v
 }
 
 /*func (obj *BlobItem) SetBlobKey(v string) {
