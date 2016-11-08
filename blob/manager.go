@@ -4,9 +4,10 @@ import (
 	"golang.org/x/net/context"
 	//	"google.golang.org/appengine"
 
-	"github.com/firefirestyle/go.minipointer"
-	//	"github.com/firefirestyle/go.miniprop"
 	"errors"
+
+	"github.com/firefirestyle/go.minipointer"
+	"github.com/firefirestyle/go.miniprop"
 
 	//	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
@@ -81,14 +82,26 @@ func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent strin
 }
 
 func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *BlobItem) error {
+	pathObj := miniprop.NewMiniPath(newItem.GetParent())
+	_, parentDirErr := obj.GetBlobItem(ctx, pathObj.GetDir(), ".dir", "")
+	if parentDirErr != nil {
+		for _, v := range pathObj.GetDirs() {
+			dirObj := obj.NewBlobItem(ctx, v, ".dir", "")
+			dirErr := dirObj.saveDB(ctx)
+			if dirErr != nil {
+				return dirErr
+			}
+		}
+	}
 	errSave := newItem.saveDB(ctx)
 	if errSave != nil {
 		return errSave
 	}
 
+	//
+	// pointer
 	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
 	pointerObj := obj.pointerMgr.GetPointerForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
-
 	pointerObj.SetSign(newItem.GetBlobKey())
 	pointerObj.SetValue(newItem.gaeObjectKey.StringID())
 	pointerObj.SetOwner(newItem.gaeObject.Owner)
@@ -100,18 +113,16 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 		}
 		return errSave
 	}
-
-	if currErr != nil {
-		Debug(ctx, "===> SIGN A")
-		return nil
-	} else {
-		Debug(ctx, "===> SIGN B")
+	//
+	// delete old data
+	if currErr == nil {
 		err := obj.DeleteBlobItem(ctx, currItem)
 		if err != nil {
 			Debug(ctx, "<gomidata>"+currItem.gaeObjectKey.StringID()+"</gomidata>")
 		}
-		return nil
 	}
+	return nil
+
 }
 
 func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) error {

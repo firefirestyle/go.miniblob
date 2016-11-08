@@ -117,7 +117,7 @@ func (obj *BlobItem) saveDB(ctx context.Context) error {
 
 func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
 	Debug(ctx, "delete From DB OLD ITEM =A============GK"+obj.gaeObjectKey.StringID()+";BK:"+obj.GetBlobKey())
-	if nil != blobstore.Delete(ctx, appengine.BlobKey(obj.GetBlobKey())) {
+	if obj.GetBlobKey() != "" && nil != blobstore.Delete(ctx, appengine.BlobKey(obj.GetBlobKey())) {
 		Debug(ctx, "SaveBlobItem Faied Blob: "+obj.gaeObjectKey.StringID()+":"+obj.GetBlobKey())
 	}
 	return datastore.Delete(ctx, obj.gaeObjectKey)
@@ -188,7 +188,3 @@ func (obj *BlobItem) GetOwner() string {
 func (obj *BlobItem) SetOwner(v string) {
 	obj.gaeObject.Owner = v
 }
-
-/*func (obj *BlobItem) SetBlobKey(v string) {
-	obj.gaeObject.BlobKey = v
-}*/
