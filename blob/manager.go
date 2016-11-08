@@ -49,7 +49,6 @@ func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name str
 /*
 func (obj *BlobManager) GetBlobItemFromQuery(ctx context.Context, parent string, name string) (*BlobItem, error) {
 	obj.FindBlobItemFromPath(ctx, parent, name, "")
-	key := obj.NewBlobItemKey(ctx, parent, name, sign)
 
 	return obj.NewBlobItemFromGaeObjectKey(ctx, key)
 }

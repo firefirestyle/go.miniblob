@@ -6,10 +6,16 @@ import (
 	"google.golang.org/appengine/datastore"
 )
 
+type BlobFounds struct {
+	Keys       []string
+	CursorNext string
+	CursorOne  string
+}
+
 /*
 https://cloud.google.com/appengine/docs/go/config/indexconfig#updating_indexes
 */
-func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent string, cursorSrc string) ([]*BlobItem, string, string) {
+func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent string, cursorSrc string) BlobFounds {
 	//
 	q := datastore.NewQuery(obj.blobItemKind)
 	q = q.Filter("ProjectId =", obj.rootGroup)
@@ -19,7 +25,7 @@ func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent strin
 	return obj.FindBlobItemFromQuery(ctx, q, cursorSrc)
 }
 
-func (obj *BlobManager) FindBlobItemFromPath(ctx context.Context, parent string, name string, cursorSrc string) ([]*BlobItem, string, string) {
+func (obj *BlobManager) FindBlobItemFromPath(ctx context.Context, parent string, name string, cursorSrc string) BlobFounds {
 	//
 	q := datastore.NewQuery(obj.blobItemKind)
 	q = q.Filter("ProjectId =", obj.rootGroup)
@@ -32,7 +38,7 @@ func (obj *BlobManager) FindBlobItemFromPath(ctx context.Context, parent string,
 
 //
 //
-func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.Query, cursorSrc string) ([]*BlobItem, string, string) {
+func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.Query, cursorSrc string) BlobFounds {
 	cursor := obj.newCursorFromSrc(cursorSrc)
 	if cursor != nil {
 		q = q.Start(*cursor)
@@ -40,8 +46,7 @@ func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.
 	q = q.KeysOnly()
 	founds := q.Run(ctx)
 
-	var retUser []*BlobItem
-
+	var keys []string
 	var cursorNext string = ""
 	var cursorOne string = ""
 
@@ -50,17 +55,18 @@ func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.
 		if err != nil || err == datastore.Done {
 			break
 		} else {
-			v, e := obj.NewBlobItemFromGaeObjectKey(ctx, key)
-			if e == nil {
-				retUser = append(retUser, v)
-			}
+			keys = append(keys, key.StringID())
 		}
 		if i == 0 {
 			cursorOne = obj.makeCursorSrc(founds)
 		}
 	}
 	cursorNext = obj.makeCursorSrc(founds)
-	return retUser, cursorOne, cursorNext
+	return BlobFounds{
+		Keys:       keys,
+		CursorOne:  cursorOne,
+		CursorNext: cursorNext,
+	}
 }
 
 func (obj *BlobManager) newCursorFromSrc(cursorSrc string) *datastore.Cursor {
