@@ -131,6 +131,10 @@ func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) erro
 
 //
 //
+//func (obj *BlobManager) DeleteBlobItems(ctx context.Context, parent string) error {
+//
+//	return nil
+//}
 
 //
 // you must to delete file before call this method, if there are many articleid's file.

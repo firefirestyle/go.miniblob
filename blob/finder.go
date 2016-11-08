@@ -36,6 +36,16 @@ func (obj *BlobManager) FindBlobItemFromPath(ctx context.Context, parent string,
 	return obj.FindBlobItemFromQuery(ctx, q, cursorSrc)
 }
 
+func (obj *BlobManager) FindAllBlobItemFromPath(ctx context.Context, parent string) BlobFounds {
+	//
+	q := datastore.NewQuery(obj.blobItemKind)
+	q = q.Filter("RootGroup =", obj.rootGroup)
+	q = q.Filter("Parent =", parent)
+	q = q.Order("-Updated")
+	//
+	return obj.FindBlobItemFromQueryAll(ctx, q)
+}
+
 func (obj *BlobManager) FindBlobItemFromOwner(ctx context.Context, owner string, cursorSrc string) BlobFounds {
 	//
 	q := datastore.NewQuery(obj.blobItemKind)
@@ -48,6 +58,32 @@ func (obj *BlobManager) FindBlobItemFromOwner(ctx context.Context, owner string,
 
 //
 //
+func (obj *BlobManager) FindBlobItemFromQueryAll(ctx context.Context, q *datastore.Query) BlobFounds {
+	founded := obj.FindBlobItemFromQuery(ctx, q, "")
+	oneCursor := founded.CursorOne
+	nextCursor := founded.CursorNext
+	keys := make([]string, 0)
+	for {
+		if len(founded.Keys) <= 0 {
+			break
+		}
+		for _, v := range founded.Keys {
+			keys = append(keys, v)
+		}
+		prevFounded := founded
+		founded = obj.FindBlobItemFromQuery(ctx, q, nextCursor)
+		nextCursor = founded.CursorNext
+		if prevFounded.CursorOne == founded.CursorOne {
+			break
+		}
+	}
+	return BlobFounds{
+		Keys:       keys,
+		CursorNext: nextCursor,
+		CursorOne:  oneCursor,
+	}
+}
+
 func (obj *BlobManager) FindBlobItemFromQuery(ctx context.Context, q *datastore.Query, cursorSrc string) BlobFounds {
 	cursor := obj.newCursorFromSrc(cursorSrc)
 	if cursor != nil {
