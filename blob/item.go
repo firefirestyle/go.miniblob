@@ -66,7 +66,10 @@ func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId strin
 }
 
 func (obj *BlobManager) NewBlobItemKey(ctx context.Context, parent string, name string, sign string) *datastore.Key {
-	return datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name, sign), 0, nil)
+	return obj.NewBlobItemKeyFromStringId(ctx, obj.MakeStringId(parent, name, sign))
+}
+func (obj *BlobManager) NewBlobItemKeyFromStringId(ctx context.Context, stringId string) *datastore.Key {
+	return datastore.NewKey(ctx, obj.blobItemKind, stringId, 0, nil)
 }
 
 func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
