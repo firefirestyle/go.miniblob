@@ -7,17 +7,6 @@ import (
 )
 
 /*
-- kind: BlobItem
-  properties:
-  - name: Parent
-  - name: Updated
-    direction: asc
-
-- kind: BlobItem
-  properties:
-  - name: Parent
-  - name: Updated
-    direction: desc
 https://cloud.google.com/appengine/docs/go/config/indexconfig#updating_indexes
 */
 func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent string, cursorSrc string) ([]*BlobItem, string, string) {
@@ -25,6 +14,17 @@ func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent strin
 	q := datastore.NewQuery(obj.blobItemKind)
 	q = q.Filter("ProjectId =", obj.rootGroup)
 	q = q.Filter("Parent =", parent)
+	q = q.Order("-Updated")
+	//
+	return obj.FindBlobItemFromQuery(ctx, q, cursorSrc)
+}
+
+func (obj *BlobManager) FindBlobItemFromPath(ctx context.Context, parent string, name string, cursorSrc string) ([]*BlobItem, string, string) {
+	//
+	q := datastore.NewQuery(obj.blobItemKind)
+	q = q.Filter("ProjectId =", obj.rootGroup)
+	q = q.Filter("Parent =", parent)
+	q = q.Filter("Name =", name)
 	q = q.Order("-Updated")
 	//
 	return obj.FindBlobItemFromQuery(ctx, q, cursorSrc)

@@ -31,6 +31,7 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 	ret.pointerMgr = minipointer.NewPointerManager(minipointer.PointerManagerConfig{
 		RootGroup: config.RootGroup,
 		Kind:      config.PointerKind,
+		//MemcachedOnly: true, // todo
 	})
 	return ret
 }
@@ -38,16 +39,29 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 func (obj *BlobManager) GetPointerMgr() *minipointer.PointerManager {
 	return obj.pointerMgr
 }
+
 func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name string, sign string) (*BlobItem, error) {
 	key := obj.NewBlobItemKey(ctx, parent, name, sign)
 
 	return obj.NewBlobItemFromGaeObjectKey(ctx, key)
 }
 
+/*
+func (obj *BlobManager) GetBlobItemFromQuery(ctx context.Context, parent string, name string) (*BlobItem, error) {
+	obj.FindBlobItemFromPath(ctx, parent, name, "")
+	key := obj.NewBlobItemKey(ctx, parent, name, sign)
+
+	return obj.NewBlobItemFromGaeObjectKey(ctx, key)
+}
+*/
 func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent string, name string) (*BlobItem, *minipointer.Pointer, error) {
 	pointerObj, pointerErr := obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 	if pointerErr != nil {
+		//		if obj.pointerMgr.IsMemcachedOnly() == false {
 		return nil, nil, pointerErr
+		//		} else {
+		//			obj.GetBlobItemFromP
+		//		}
 	}
 
 	retObj, retErr := obj.GetBlobItem(ctx, parent, name, pointerObj.GetSign())
@@ -66,7 +80,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	pointerObj.SetSign(newItem.GetBlobKey())
 	pointerObj.SetValue(newItem.gaeObjectKey.StringID())
 	pointerObj.SetOwner(newItem.gaeObject.Owner)
-	pointerErr := pointerObj.Save(ctx)
+	pointerErr := obj.pointerMgr.Save(ctx, pointerObj)
 	if pointerErr != nil {
 		err := newItem.deleteFromDB(ctx)
 		if err != nil {
