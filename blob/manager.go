@@ -129,12 +129,51 @@ func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) erro
 	return item.deleteFromDB(ctx)
 }
 
+func (obj *BlobManager) GetPointer(ctx context.Context, parent, name string) (*minipointer.Pointer, error) {
+	return obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+}
+
+func (obj *BlobManager) DeleteBlobItemWithPointer(ctx context.Context, item *BlobItem) error {
+	pointer, pointerErr := obj.GetPointer(ctx, item.GetParent(), item.GetName())
+	if pointerErr == nil {
+		obj.GetPointerMgr().DeleteFromPointer(ctx, pointer)
+	}
+	return item.deleteFromDB(ctx)
+}
+
 //
 //
-//func (obj *BlobManager) DeleteBlobItems(ctx context.Context, parent string) error {
-//
-//	return nil
-//}
+func (obj *BlobManager) DeleteBlobItemsAtRecursiveMode(ctx context.Context, parent string) error {
+	folders := make([]string, 0)
+	folders = append(folders, parent)
+	foldersTmp := make([]string, 0)
+	for len(folders) > 0 {
+		folder := folders[0]
+		folders = folders[1:]
+		foldersTmp = append(foldersTmp, folder)
+		//
+		founded := obj.FindAllBlobItemFromPath(ctx, folder)
+		for _, v := range founded.Keys {
+			keyInfo := obj.GetKeyInfoFromStringId(v)
+			if keyInfo.Name == ".dir" {
+				folders = append(folders, v)
+				continue
+			}
+			blobObj, blobErr := obj.GetBlobItem(ctx, keyInfo.Parent, keyInfo.Name, keyInfo.Sign)
+			if blobErr == nil {
+				obj.DeleteBlobItemWithPointer(ctx, blobObj)
+			}
+		}
+	}
+	for _, v := range foldersTmp {
+		keyInfo := obj.GetKeyInfoFromStringId(v)
+		blobObj, blobErr := obj.GetBlobItem(ctx, keyInfo.Parent, keyInfo.Name, keyInfo.Sign)
+		if blobErr == nil {
+			obj.DeleteBlobItemWithPointer(ctx, blobObj)
+		}
+	}
+	return nil
+}
 
 //
 // you must to delete file before call this method, if there are many articleid's file.
