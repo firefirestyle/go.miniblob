@@ -73,10 +73,10 @@ func (obj *BlobManager) NewBlobItemGaeKeyFromStringId(ctx context.Context, strin
 	return datastore.NewKey(ctx, obj.blobItemKind, stringId, 0, nil)
 }
 
-func (obj *BlobManager) NewBlobItemFromGaeKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
+func (obj *BlobManager) GetBlobItemFromGaeKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
 	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, gaeKey.StringID())
 	if errMemCcache == nil {
-		Debug(ctx, ">>>> from memcache "+obj.rootGroup+":"+gaeKey.StringID())
+		//		Debug(ctx, ">>>> from memcache "+obj.rootGroup+":"+gaeKey.StringID())
 		return memCacheObj, nil
 	}
 	//
@@ -84,10 +84,10 @@ func (obj *BlobManager) NewBlobItemFromGaeKey(ctx context.Context, gaeKey *datas
 	var item GaeObjectBlobItem
 	err := datastore.Get(ctx, gaeKey, &item)
 	if err != nil {
-		Debug(ctx, ">>>> failed to get "+obj.rootGroup+":"+gaeKey.StringID())
+		//		Debug(ctx, ">>>> failed to get "+obj.rootGroup+":"+gaeKey.StringID())
 		return nil, err
 	}
-	Debug(ctx, ">>>> from datastore to get "+obj.rootGroup+":"+gaeKey.StringID())
+	//	Debug(ctx, ">>>> from datastore to get "+obj.rootGroup+":"+gaeKey.StringID())
 	ret := new(BlobItem)
 	ret.gaeObject = &item
 	ret.gaeObjectKey = gaeKey

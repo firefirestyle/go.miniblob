@@ -48,7 +48,7 @@ func (obj *BlobManager) GetPointerMgr() *minipointer.PointerManager {
 func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name string, sign string) (*BlobItem, error) {
 	key := obj.NewBlobItemGaeKey(ctx, parent, name, sign)
 
-	return obj.NewBlobItemFromGaeKey(ctx, key)
+	return obj.GetBlobItemFromGaeKey(ctx, key)
 }
 
 func (obj *BlobManager) GetBlobItemFromQuery(ctx context.Context, parent string, name string) (*BlobItem, error) {
@@ -57,12 +57,12 @@ func (obj *BlobManager) GetBlobItemFromQuery(ctx context.Context, parent string,
 		return nil, errors.New("not found blobitem")
 	}
 	key := obj.NewBlobItemGaeKeyFromStringId(ctx, founded.Keys[0])
-	return obj.NewBlobItemFromGaeKey(ctx, key)
+	return obj.GetBlobItemFromGaeKey(ctx, key)
 }
 
 func (obj *BlobManager) GetBlobItemFromStringId(ctx context.Context, stringId string) (*BlobItem, error) {
 	key := obj.NewBlobItemGaeKeyFromStringId(ctx, stringId)
-	return obj.NewBlobItemFromGaeKey(ctx, key)
+	return obj.GetBlobItemFromGaeKey(ctx, key)
 }
 
 //
