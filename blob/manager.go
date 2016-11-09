@@ -175,6 +175,7 @@ func (obj *BlobManager) DeleteBlobItemsAtRecursiveMode(ctx context.Context, pare
 	return nil
 }
 
+/*
 //
 // you must to delete file before call this method, if there are many articleid's file.
 //
@@ -238,7 +239,7 @@ func (obj *BlobManager) DeleteBlobItemsFormOnwer(ctx context.Context, owner stri
 		}
 	}
 	return nil
-}
+}*/
 
 func Debug(ctx context.Context, message string) {
 	log.Infof(ctx, message)
