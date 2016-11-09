@@ -65,14 +65,15 @@ func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId strin
 	return ret, err
 }
 
-func (obj *BlobManager) NewBlobItemKey(ctx context.Context, parent string, name string, sign string) *datastore.Key {
-	return obj.NewBlobItemKeyFromStringId(ctx, obj.MakeStringId(parent, name, sign))
+func (obj *BlobManager) NewBlobItemGaeKey(ctx context.Context, parent string, name string, sign string) *datastore.Key {
+	return obj.NewBlobItemGaeKeyFromStringId(ctx, obj.MakeStringId(parent, name, sign))
 }
-func (obj *BlobManager) NewBlobItemKeyFromStringId(ctx context.Context, stringId string) *datastore.Key {
+
+func (obj *BlobManager) NewBlobItemGaeKeyFromStringId(ctx context.Context, stringId string) *datastore.Key {
 	return datastore.NewKey(ctx, obj.blobItemKind, stringId, 0, nil)
 }
 
-func (obj *BlobManager) NewBlobItemFromGaeObjectKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
+func (obj *BlobManager) NewBlobItemFromGaeKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
 	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, gaeKey.StringID())
 	if errMemCcache == nil {
 		Debug(ctx, ">>>> from memcache "+obj.rootGroup+":"+gaeKey.StringID())
