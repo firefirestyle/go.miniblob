@@ -33,7 +33,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	//
 	// pointer
 	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
-	pointerObj := obj.pointerMgr.GetPointerForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
+	pointerObj := obj.pointerMgr.GetPointerWithNewForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
 	pointerObj.SetSign(newItem.GetBlobKey())
 	pointerObj.SetValue(newItem.gaeObjectKey.StringID())
 	pointerObj.SetOwner(newItem.gaeObject.Owner)
