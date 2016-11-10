@@ -32,12 +32,14 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 
 	//
 	// pointer
+	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
 	pointerObj := obj.pointerMgr.GetPointerForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
 	pointerObj.SetSign(newItem.GetBlobKey())
 	pointerObj.SetValue(newItem.gaeObjectKey.StringID())
 	pointerObj.SetOwner(newItem.gaeObject.Owner)
 	pointerErr := obj.pointerMgr.Save(ctx, pointerObj)
 	if pointerErr != nil {
+		Debug(ctx, "<gomidata 1111>"+newItem.gaeObjectKey.StringID()+"</gomidata>")
 		err := obj.DeleteBlobItemFromStringId(ctx, newItem.gaeObjectKey.StringID())
 		if err != nil {
 			Debug(ctx, "<gomidata>"+newItem.gaeObjectKey.StringID()+"</gomidata>")
@@ -46,8 +48,9 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	}
 	//
 	// delete old data
-	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
+
 	if currErr == nil {
+		Debug(ctx, "<gomidata 333>"+newItem.gaeObjectKey.StringID()+"</gomidata>")
 		err := obj.DeleteBlobItem(ctx, currItem)
 		if err != nil {
 			Debug(ctx, "<gomidata>"+currItem.gaeObjectKey.StringID()+"</gomidata>")

@@ -71,9 +71,12 @@ func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent strin
 	pointerObj, pointerErr := obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 	if pointerErr != nil {
 		if obj.pointerMgr.IsMemcachedOnly() == false {
+			Debug(ctx, "=====>AASD 1")
 			return nil, nil, pointerErr
 		} else {
 			o, e := obj.GetBlobItemFromQuery(ctx, parent, name)
+			Debug(ctx, "=====>AASD 2")
+
 			return o, nil, e
 		}
 	}
