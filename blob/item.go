@@ -24,8 +24,8 @@ type GaeObjectBlobItem struct {
 }
 
 type BlobItem struct {
-	gaeObject    *GaeObjectBlobItem
-	gaeObjectKey *datastore.Key
+	gaeObject *GaeObjectBlobItem
+	gaeKey    *datastore.Key
 }
 
 const (
@@ -48,7 +48,7 @@ func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name str
 	ret.gaeObject.BlobKey = blobKey
 	ret.gaeObject.Updated = time.Now()
 	ret.gaeObject.Sign = blobKey
-	ret.gaeObjectKey = datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name, blobKey), 0, nil)
+	ret.gaeKey = datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name, blobKey), 0, nil)
 	return ret
 }
 
@@ -59,7 +59,7 @@ func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId strin
 	}
 
 	ret := new(BlobItem)
-	ret.gaeObjectKey = datastore.NewKey(ctx, obj.blobItemKind, keyId, 0, nil)
+	ret.gaeKey = datastore.NewKey(ctx, obj.blobItemKind, keyId, 0, nil)
 	ret.gaeObject = new(GaeObjectBlobItem)
 	err := ret.SetParamFromJson(jsonSource.Value)
 	return ret, err
@@ -76,7 +76,6 @@ func (obj *BlobManager) NewBlobItemGaeKeyFromStringId(ctx context.Context, strin
 func (obj *BlobManager) GetBlobItemFromGaeKey(ctx context.Context, gaeKey *datastore.Key) (*BlobItem, error) {
 	memCacheObj, errMemCcache := obj.NewBlobItemFromMemcache(ctx, gaeKey.StringID())
 	if errMemCcache == nil {
-		//		Debug(ctx, ">>>> from memcache "+obj.rootGroup+":"+gaeKey.StringID())
 		return memCacheObj, nil
 	}
 	//
@@ -84,13 +83,11 @@ func (obj *BlobManager) GetBlobItemFromGaeKey(ctx context.Context, gaeKey *datas
 	var item GaeObjectBlobItem
 	err := datastore.Get(ctx, gaeKey, &item)
 	if err != nil {
-		//		Debug(ctx, ">>>> failed to get "+obj.rootGroup+":"+gaeKey.StringID())
 		return nil, err
 	}
-	//	Debug(ctx, ">>>> from datastore to get "+obj.rootGroup+":"+gaeKey.StringID())
 	ret := new(BlobItem)
 	ret.gaeObject = &item
-	ret.gaeObjectKey = gaeKey
+	ret.gaeKey = gaeKey
 
 	if err == nil {
 		ret.updateMemcache(ctx)
@@ -102,7 +99,7 @@ func (obj *BlobItem) updateMemcache(ctx context.Context) error {
 	userObjMemSource, err_toJson := obj.ToJson()
 	if err_toJson == nil {
 		userObjMem := &memcache.Item{
-			Key:   obj.gaeObjectKey.StringID(),
+			Key:   obj.gaeKey.StringID(),
 			Value: []byte(userObjMemSource), //
 		}
 		memcache.Set(ctx, userObjMem)
@@ -111,7 +108,7 @@ func (obj *BlobItem) updateMemcache(ctx context.Context) error {
 }
 
 func (obj *BlobItem) saveDB(ctx context.Context) error {
-	_, e := datastore.Put(ctx, obj.gaeObjectKey, obj.gaeObject)
+	_, e := datastore.Put(ctx, obj.gaeKey, obj.gaeObject)
 	obj.updateMemcache(ctx)
 	return e
 }

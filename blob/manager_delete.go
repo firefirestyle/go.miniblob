@@ -35,13 +35,13 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
 	pointerObj := obj.pointerMgr.GetPointerWithNewForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
 	pointerObj.SetSign(newItem.GetBlobKey())
-	pointerObj.SetValue(newItem.gaeObjectKey.StringID())
+	pointerObj.SetValue(newItem.gaeKey.StringID())
 	pointerObj.SetOwner(newItem.gaeObject.Owner)
 	pointerErr := obj.pointerMgr.Save(ctx, pointerObj)
 	if pointerErr != nil {
-		err := obj.DeleteBlobItemFromStringId(ctx, newItem.gaeObjectKey.StringID())
+		err := obj.DeleteBlobItemFromStringId(ctx, newItem.gaeKey.StringID())
 		if err != nil {
-			Debug(ctx, "<gomidata>"+newItem.gaeObjectKey.StringID()+"</gomidata>")
+			Debug(ctx, "<gomidata>"+newItem.gaeKey.StringID()+"</gomidata>")
 		}
 		return errSave
 	}
@@ -51,7 +51,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	if currErr == nil {
 		err := obj.DeleteBlobItem(ctx, currItem)
 		if err != nil {
-			Debug(ctx, "<gomidata>"+currItem.gaeObjectKey.StringID()+"</gomidata>")
+			Debug(ctx, "<gomidata>"+currItem.gaeKey.StringID()+"</gomidata>")
 		}
 	}
 	return nil
@@ -59,15 +59,15 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 }
 
 func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) error {
-	return obj.DeleteBlobItemFromStringId(ctx, item.gaeObjectKey.StringID())
+	return obj.DeleteBlobItemFromStringId(ctx, item.gaeKey.StringID())
 }
 
 func (obj *BlobManager) DeletePointer(ctx context.Context, parent, name string) error {
-	return obj.GetPointerMgr().Delete(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+	return obj.GetPointerMgr().DeletePointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 }
 
 func (obj *BlobManager) DeleteBlobItemWithPointer(ctx context.Context, item *BlobItem) error {
-	return obj.DeleteBlobItemWithPointerFromStringId(ctx, item.gaeObjectKey.StringID())
+	return obj.DeleteBlobItemWithPointerFromStringId(ctx, item.gaeKey.StringID())
 }
 
 func (obj *BlobManager) DeleteBlobItemWithPointerFromStringId(ctx context.Context, stringId string) error {
