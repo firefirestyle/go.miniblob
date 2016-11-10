@@ -67,7 +67,11 @@ func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent strin
 			return nil, nil, pointerErr
 		} else {
 			o, e := obj.GetBlobItemFromQuery(ctx, parent, name)
-			return o, nil, e
+			var p *minipointer.Pointer = nil
+			if e == nil {
+				p, _ = obj.SavePointer(ctx, o)
+			}
+			return o, p, e
 		}
 	}
 	retObj, retErr := obj.GetBlobItem(ctx, parent, name, pointerObj.GetSign())

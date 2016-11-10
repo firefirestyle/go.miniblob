@@ -13,6 +13,15 @@ import (
 	//"google.golang.org/appengine/log"
 )
 
+func (obj *BlobManager) SavePointer(ctx context.Context, newItem *BlobItem) (*minipointer.Pointer, error) {
+	pointerObj := obj.pointerMgr.GetPointerWithNewForRelayId(ctx, obj.MakeBlobId(newItem.GetParent(), newItem.GetName()))
+	pointerObj.SetSign(newItem.GetBlobKey())
+	pointerObj.SetValue(newItem.gaeKey.StringID())
+	pointerObj.SetOwner(newItem.gaeObject.Owner)
+	pointerErr := obj.pointerMgr.Save(ctx, pointerObj)
+	return pointerObj, pointerErr
+}
+
 func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *BlobItem) error {
 	pathObj := miniprop.NewMiniPath(newItem.GetParent())
 	_, parentDirErr := obj.GetBlobItem(ctx, pathObj.GetDir(), ".dir", "")
@@ -33,11 +42,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	//
 	// pointer
 	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
-	pointerObj := obj.pointerMgr.GetPointerWithNewForRelayId(ctx, obj.MakeBlobId(newItem.GetParent(), newItem.GetName()))
-	pointerObj.SetSign(newItem.GetBlobKey())
-	pointerObj.SetValue(newItem.gaeKey.StringID())
-	pointerObj.SetOwner(newItem.gaeObject.Owner)
-	pointerErr := obj.pointerMgr.Save(ctx, pointerObj)
+	_, pointerErr := obj.SavePointer(ctx, newItem)
 	if pointerErr != nil {
 		err := obj.DeleteBlobItemFromStringId(ctx, newItem.gaeKey.StringID())
 		if err != nil {
