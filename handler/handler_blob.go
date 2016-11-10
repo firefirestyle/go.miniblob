@@ -51,7 +51,7 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 			}
 		}
 	}
-	uu, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
+	reqUrl, reqName, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
 	//
 	if err != nil {
 		for _, ff := range obj.onEvent.OnBlobFailedList {
@@ -59,7 +59,8 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 		}
 		HandleError(w, r, outputPropObj, ErrorCodeMakeRequestUrl, "failed to make uploadurl")
 	} else {
-		outputPropObj.SetString("token", uu.String())
+		outputPropObj.SetString("token", reqUrl.String())
+		outputPropObj.SetString("name", reqName)
 		w.Write(outputPropObj.ToJson())
 		w.WriteHeader(http.StatusOK)
 	}

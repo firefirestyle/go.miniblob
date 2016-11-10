@@ -26,7 +26,7 @@ import (
 // for make original hundler
 //
 
-func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, fileName string, publicSign string, privateSign string, optKeyValue map[string]string) (*url.URL, error) {
+func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, fileName string, publicSign string, privateSign string, optKeyValue map[string]string) (*url.URL, string, error) {
 	if optKeyValue == nil {
 		optKeyValue = map[string]string{}
 	}
@@ -71,9 +71,9 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 		callbackValue.Add(k, v)
 	}
 	callbackValue.Add("hash", base64.StdEncoding.EncodeToString(hash.Sum(nil)))
-	callbackValue.Add("name", base32.StdEncoding.EncodeToString(hash.Sum([]byte(""+dirName+"/"+fileName))))
 	callbackUrlObj.RawQuery = callbackValue.Encode()
-	return blobstore.UploadURL(ctx, callbackUrlObj.String(), nil)
+	retV, retE := blobstore.UploadURL(ctx, callbackUrlObj.String(), nil)
+	return retV, base32.StdEncoding.EncodeToString(hash.Sum([]byte("" + dirName + "/" + fileName))), retE
 }
 
 type CheckCallbackResult struct {
