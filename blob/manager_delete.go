@@ -23,6 +23,8 @@ func (obj *BlobManager) SavePointer(ctx context.Context, newItem *BlobItem) (*mi
 }
 
 func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *BlobItem) error {
+	//
+	// mkdirs
 	pathObj := miniprop.NewMiniPath(newItem.GetParent())
 	_, parentDirErr := obj.GetBlobItem(ctx, pathObj.GetDir(), ".dir", "")
 	if parentDirErr != nil {
@@ -34,14 +36,15 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 			}
 		}
 	}
+	//
+	//
+	blobStringId, _, currErr := obj.GetBlobItemStringIdFromPointer(ctx, newItem.GetParent(), newItem.GetName())
+	//currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
+
 	errSave := newItem.saveDB(ctx)
 	if errSave != nil {
 		return errSave
 	}
-
-	//
-	// todo must to get keyonly
-	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
 
 	//
 	// pointer
@@ -57,9 +60,9 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	// delete old data
 
 	if currErr == nil {
-		err := obj.DeleteBlobItem(ctx, currItem)
+		err := obj.DeleteBlobItemFromStringId(ctx, blobStringId)
 		if err != nil {
-			Debug(ctx, "<gomidata>"+currItem.gaeKey.StringID()+"</gomidata>")
+			Debug(ctx, "<gomidata>"+blobStringId+"</gomidata>")
 		}
 	}
 	return nil

@@ -44,6 +44,15 @@ func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name str
 	return obj.GetBlobItemFromGaeKey(ctx, key)
 }
 
+func (obj *BlobManager) GetBlobItemStringIdFromQuery(ctx context.Context, parent string, name string) (string, error) {
+	founded := obj.FindBlobItemFromPath(ctx, parent, name, "")
+	if len(founded.Keys) <= 0 {
+		return "", errors.New("not found blobitem")
+	}
+	key := obj.NewBlobItemGaeKeyFromStringId(ctx, founded.Keys[0])
+	return key.StringID(), nil
+}
+
 func (obj *BlobManager) GetBlobItemFromQuery(ctx context.Context, parent string, name string) (*BlobItem, error) {
 	founded := obj.FindBlobItemFromPath(ctx, parent, name, "")
 	if len(founded.Keys) <= 0 {
@@ -76,4 +85,17 @@ func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent strin
 	}
 	retObj, retErr := obj.GetBlobItem(ctx, parent, name, pointerObj.GetSign())
 	return retObj, pointerObj, retErr
+}
+
+func (obj *BlobManager) GetBlobItemStringIdFromPointer(ctx context.Context, parent string, name string) (string, string, error) {
+	pointerObj, pointerErr := obj.pointerMgr.GetPointer(ctx, obj.MakeBlobId(parent, name), minipointer.TypePointer)
+	if pointerErr != nil {
+		if obj.pointerMgr.IsMemcachedOnly() == false {
+			return "", "", pointerErr
+		} else {
+			o, e := obj.GetBlobItemStringIdFromQuery(ctx, parent, name)
+			return o, obj.MakeBlobId(parent, name), e
+		}
+	}
+	return pointerObj.GetValue(), obj.MakeBlobId(parent, name), nil
 }
