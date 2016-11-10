@@ -102,7 +102,6 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	Debug(ctx, "onBlobComplete --s1")
 	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
 		for _, ff := range obj.onEvent.OnBlobFailedList {
@@ -112,7 +111,6 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Debug(ctx, "onBlobComplete --s2")
 	for _, f := range obj.onEvent.OnBlobCompleteList {
 		err3 := f(w, r, outputPropObj, obj, newItem)
 		if err3 != nil {
@@ -124,7 +122,6 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	Debug(ctx, "onBlobComplete --s3 : "+newItem.GetBlobKey())
 	outputPropObj.SetString("blobkey", newItem.GetBlobKey())
 	w.Write(outputPropObj.ToJson())
 	w.WriteHeader(http.StatusOK)
