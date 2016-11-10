@@ -42,10 +42,12 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 }
 
 func (obj *BlobManager) GetPointerMgr() *minipointer.PointerManager {
+
 	return obj.pointerMgr
 }
 
 func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name string, sign string) (*BlobItem, error) {
+
 	key := obj.NewBlobItemGaeKey(ctx, parent, name, sign)
 
 	return obj.GetBlobItemFromGaeKey(ctx, key)
