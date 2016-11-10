@@ -125,10 +125,6 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 
 }
 
-func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) error {
-	return obj.DeleteBlobItemFromStringId(ctx, item.gaeObjectKey.StringID())
-}
-
 func (obj *BlobManager) GetPointer(ctx context.Context, parent, name string) (*minipointer.Pointer, error) {
 	return obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 }
@@ -137,16 +133,16 @@ func (obj *BlobManager) GetPointerGaeKey(ctx context.Context, parent, name strin
 	return obj.pointerMgr.NewPointerGaeKey(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 }
 
+func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) error {
+	return obj.DeleteBlobItemFromStringId(ctx, item.gaeObjectKey.StringID())
+}
+
 func (obj *BlobManager) DeletePointer(ctx context.Context, parent, name string) error {
 	return obj.GetPointerMgr().Delete(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 }
 
 func (obj *BlobManager) DeleteBlobItemWithPointer(ctx context.Context, item *BlobItem) error {
-	pointer, pointerErr := obj.GetPointer(ctx, item.GetParent(), item.GetName())
-	if pointerErr == nil {
-		obj.GetPointerMgr().DeleteFromPointer(ctx, pointer)
-	}
-	return obj.DeleteBlobItem(ctx, item)
+	return obj.DeleteBlobItemWithPointerFromStringId(ctx, item.gaeObjectKey.StringID())
 }
 
 func (obj *BlobManager) DeleteBlobItemWithPointerFromStringId(ctx context.Context, stringId string) error {
