@@ -40,8 +40,11 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	}
 
 	//
-	// pointer
+	// todo must to get keyonly
 	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
+
+	//
+	// pointer
 	_, pointerErr := obj.SavePointer(ctx, newItem)
 	if pointerErr != nil {
 		err := obj.DeleteBlobItemFromStringId(ctx, newItem.gaeKey.StringID())
