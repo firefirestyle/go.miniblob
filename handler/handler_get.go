@@ -23,35 +23,28 @@ func (obj *BlobHandler) HandleGetBase(w http.ResponseWriter, r *http.Request, ke
 
 	//
 	outputPropObj := miniprop.NewMiniProp()
-	for _, f := range obj.onEvent.OnGetRequestList {
-		errReqCheck := f(w, r, outputPropObj, obj)
-		if errReqCheck != nil {
-			HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, errReqCheck.Error())
-			return
-		}
+	errReqCheck := obj.OnGetRequest(w, r, outputPropObj, obj)
+	if errReqCheck != nil {
+		obj.OnGetFailed(w, r, outputPropObj, obj, nil)
+		HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, errReqCheck.Error())
+		return
 	}
 	//
 	if key != "" {
 		w.Header().Set("Cache-Control", "public, max-age=2592000")
-		for _, f := range obj.onEvent.OnGetSuccessList {
-			f(w, r, outputPropObj, obj, nil)
-		}
+		obj.OnGetSuccess(w, r, outputPropObj, obj, nil)
 		blobstore.Send(w, appengine.BlobKey(key))
 		return
 	} else {
 		ctx := appengine.NewContext(r)
 		blobObj, _, err := obj.manager.GetBlobItemFromPointer(ctx, dir, file)
 		if err != nil {
-			for _, f := range obj.onEvent.OnGetFailedList {
-				f(w, r, outputPropObj, obj, nil)
-			}
+			obj.OnGetFailed(w, r, outputPropObj, obj, nil)
 			HandleError(w, r, outputPropObj, ErrorCodeGetBlobItem, err.Error())
 			return
 		} else {
+			obj.OnGetSuccess(w, r, outputPropObj, obj, blobObj)
 			blobstore.Send(w, appengine.BlobKey(blobObj.GetBlobKey()))
-			for _, f := range obj.onEvent.OnGetSuccessList {
-				f(w, r, outputPropObj, obj, blobObj)
-			}
 			return
 		}
 	}

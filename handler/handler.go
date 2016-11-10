@@ -58,8 +58,21 @@ func (obj *BlobHandler) AddOnDeleteSuccess(f func(http.ResponseWriter, *http.Req
 	obj.onEvent.OnDeleteSuccessList = append(obj.onEvent.OnDeleteSuccessList, f)
 }
 
+//
+//
+//
 func (obj *BlobHandler) AddOnGetRequest(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error) {
 	obj.onEvent.OnGetRequestList = append(obj.onEvent.OnGetRequestList, f)
+}
+
+func (obj *BlobHandler) OnGetRequest(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler) error {
+	for _, f := range obj.onEvent.OnGetRequestList {
+		errReqCheck := f(w, r, o, h)
+		if errReqCheck != nil {
+			return errReqCheck
+		}
+	}
+	return nil
 }
 
 func (obj *BlobHandler) AddOnGetFailed(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
@@ -68,6 +81,20 @@ func (obj *BlobHandler) AddOnGetFailed(f func(http.ResponseWriter, *http.Request
 
 func (obj *BlobHandler) AddOnGetSuccess(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
 	obj.onEvent.OnGetSuccessList = append(obj.onEvent.OnGetSuccessList, f)
+}
+
+//	OnGetFailedList      []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+func (obj *BlobHandler) OnGetFailed(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) {
+	for _, f := range obj.onEvent.OnGetFailedList {
+		f(w, r, o, h, i)
+	}
+}
+
+//	OnGetSuccessList     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
+func (obj *BlobHandler) OnGetSuccess(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) {
+	for _, f := range obj.onEvent.OnGetSuccessList {
+		f(w, r, o, h, i)
+	}
 }
 
 //
