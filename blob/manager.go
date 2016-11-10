@@ -4,7 +4,7 @@ import (
 	"golang.org/x/net/context"
 	//	"google.golang.org/appengine"
 
-	"errors"
+	//	"errors"
 
 	"github.com/firefirestyle/go.minipointer"
 	//	"github.com/firefirestyle/go.miniprop"
@@ -43,43 +43,6 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 
 func (obj *BlobManager) GetPointerMgr() *minipointer.PointerManager {
 	return obj.pointerMgr
-}
-
-func (obj *BlobManager) GetBlobItem(ctx context.Context, parent string, name string, sign string) (*BlobItem, error) {
-
-	key := obj.NewBlobItemGaeKey(ctx, parent, name, sign)
-
-	return obj.GetBlobItemFromGaeKey(ctx, key)
-}
-
-func (obj *BlobManager) GetBlobItemFromQuery(ctx context.Context, parent string, name string) (*BlobItem, error) {
-	founded := obj.FindBlobItemFromPath(ctx, parent, name, "")
-	if len(founded.Keys) <= 0 {
-		return nil, errors.New("not found blobitem")
-	}
-	key := obj.NewBlobItemGaeKeyFromStringId(ctx, founded.Keys[0])
-	return obj.GetBlobItemFromGaeKey(ctx, key)
-}
-
-func (obj *BlobManager) GetBlobItemFromStringId(ctx context.Context, stringId string) (*BlobItem, error) {
-	key := obj.NewBlobItemGaeKeyFromStringId(ctx, stringId)
-	return obj.GetBlobItemFromGaeKey(ctx, key)
-}
-
-//
-// if memcachedonly == true , posssible to become pointer == null
-func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent string, name string) (*BlobItem, *minipointer.Pointer, error) {
-	pointerObj, pointerErr := obj.pointerMgr.GetPointer(ctx, obj.MakeBlobId(parent, name), minipointer.TypePointer)
-	if pointerErr != nil {
-		if obj.pointerMgr.IsMemcachedOnly() == false {
-			return nil, nil, pointerErr
-		} else {
-			o, e := obj.GetBlobItemFromQuery(ctx, parent, name)
-			return o, nil, e
-		}
-	}
-	retObj, retErr := obj.GetBlobItem(ctx, parent, name, pointerObj.GetSign())
-	return retObj, pointerObj, retErr
 }
 
 func (obj *BlobManager) GetPointer(ctx context.Context, parent, name string) (*minipointer.Pointer, error) {
