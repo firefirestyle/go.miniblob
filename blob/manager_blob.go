@@ -11,6 +11,7 @@ import (
 
 	"io"
 
+	"encoding/base32"
 	"encoding/base64"
 	"strings"
 
@@ -70,6 +71,7 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 		callbackValue.Add(k, v)
 	}
 	callbackValue.Add("hash", base64.StdEncoding.EncodeToString(hash.Sum(nil)))
+	callbackValue.Add("name", base32.StdEncoding.EncodeToString(hash.Sum([]byte(""+dirName+"/"+fileName))))
 	callbackUrlObj.RawQuery = callbackValue.Encode()
 	return blobstore.UploadURL(ctx, callbackUrlObj.String(), nil)
 }
@@ -123,7 +125,8 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 	// --
 	// files
 	// --
-	file := blobs["file"]
+	name := base32.StdEncoding.EncodeToString(hash.Sum([]byte("" + dirName + "/" + fileName)))
+	file := blobs[name]
 	if len(file) == 0 {
 		return nil, errors.New("faied to find file")
 	}
