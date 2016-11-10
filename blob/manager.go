@@ -9,7 +9,7 @@ import (
 	"github.com/firefirestyle/go.minipointer"
 	"github.com/firefirestyle/go.miniprop"
 
-	//	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
 )
 
@@ -133,6 +133,14 @@ func (obj *BlobManager) GetPointer(ctx context.Context, parent, name string) (*m
 	return obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
 }
 
+func (obj *BlobManager) GetPointerGaeKey(ctx context.Context, parent, name string) *datastore.Key {
+	return obj.pointerMgr.NewPointerGaeKey(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+}
+
+func (obj *BlobManager) DeletePointer(ctx context.Context, parent, name string) error {
+	return obj.GetPointerMgr().Delete(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+}
+
 func (obj *BlobManager) DeleteBlobItemWithPointer(ctx context.Context, item *BlobItem) error {
 	pointer, pointerErr := obj.GetPointer(ctx, item.GetParent(), item.GetName())
 	if pointerErr == nil {
@@ -141,9 +149,15 @@ func (obj *BlobManager) DeleteBlobItemWithPointer(ctx context.Context, item *Blo
 	return obj.DeleteBlobItem(ctx, item)
 }
 
+func (obj *BlobManager) DeleteBlobItemWithPointerFromStringId(ctx context.Context, stringId string) error {
+	keyInfo := obj.GetKeyInfoFromStringId(stringId)
+	obj.DeletePointer(ctx, keyInfo.Parent, keyInfo.Name)
+	return obj.DeleteBlobItemFromStringId(ctx, stringId)
+}
+
 //
 //
-func (obj *BlobManager) DeleteBlobItemsAtRecursiveMode(ctx context.Context, parent string) error {
+func (obj *BlobManager) DeleteBlobItemsWithPointerAtRecursiveMode(ctx context.Context, parent string) error {
 	folders := make([]string, 0)
 	folders = append(folders, parent)
 	foldersTmp := make([]string, 0)
@@ -174,72 +188,6 @@ func (obj *BlobManager) DeleteBlobItemsAtRecursiveMode(ctx context.Context, pare
 	}
 	return nil
 }
-
-/*
-//
-// you must to delete file before call this method, if there are many articleid's file.
-//
-func (obj *BlobManager) DeleteBlobItemsFormOnwer(ctx context.Context, owner string) error {
-	Debug(ctx, ">>>>>>>>>>>>>>>>>> A1> "+owner)
-	pointerMgr := obj.GetPointerMgr()
-	cursor := ""
-	if pointerMgr.IsMemcachedOnly() == true {
-		Debug(ctx, ">>>>>>>>>>>>>>>>>> A2> "+owner)
-		//obj.FindBlobItemFromQuery()
-		cursor := ""
-		founded := obj.FindBlobItemFromOwner(ctx, owner, cursor)
-		for {
-			Debug(ctx, ">>>>>>>>>>>>>>>>>> A3> "+owner)
-			if len(founded.Keys) <= 0 {
-				break
-			}
-			Debug(ctx, ">>>>>>>>>>>>>>>>>> A4> "+owner)
-			for _, k := range founded.Keys {
-				Debug(ctx, ">>>>>>>>>>>>>>>>>> A5> "+k)
-				blobObj, blobErr := obj.GetBlobItemFromStringId(ctx, k)
-				if blobErr == nil {
-					obj.DeleteBlobItem(ctx, blobObj)
-				}
-			}
-
-			prevFounded := founded
-			cursor = founded.CursorNext
-			founded = obj.FindBlobItemFromOwner(ctx, owner, cursor)
-			if founded.CursorOne == prevFounded.CursorOne {
-				Debug(ctx, "<E2>")
-				break
-			}
-		}
-	} else {
-		founded := pointerMgr.FindFromOwner(ctx, cursor, owner)
-		for {
-			if len(founded.Keys) <= 0 {
-				Debug(ctx, "<E1>")
-				break
-			}
-			for _, v := range founded.Keys {
-				Debug(ctx, "<K> "+v)
-				pointerKeyInfo := pointerMgr.GetKeyInfoFromStringId(v)
-				blobitemKeyInfo := obj.GetKeyInfoFromStringId(pointerKeyInfo.Identify)
-				//
-				blobitemObj, pointerObj, _ := obj.GetBlobItemFromPointer(ctx, blobitemKeyInfo.Parent, blobitemKeyInfo.Name)
-				if blobitemObj != nil {
-					obj.DeleteBlobItem(ctx, blobitemObj)
-				}
-				if pointerObj != nil {
-					pointerMgr.Delete(ctx, pointerKeyInfo.Identify, pointerKeyInfo.IdentifyType)
-				}
-			}
-			prevFounded := founded
-			founded = pointerMgr.FindFromOwner(ctx, founded.CursorNext, owner)
-			if founded.CursorOne == prevFounded.CursorOne {
-				Debug(ctx, "<E2>")
-				break
-			}
-		}
-	}
-	return nil
-}*/
 
 func Debug(ctx context.Context, message string) {
 	log.Infof(ctx, message)

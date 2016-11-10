@@ -127,15 +127,6 @@ func (obj *BlobManager) DeleteBlobItemFromStringId(ctx context.Context, stringId
 	return datastore.Delete(ctx, obj.NewBlobItemGaeKeyFromStringId(ctx, stringId))
 }
 
-/*
-func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
-	//Debug(ctx, "delete From DB OLD ITEM =A============GK"+obj.gaeObjectKey.StringID()+";BK:"+obj.GetBlobKey())
-	if obj.GetBlobKey() != "" && nil != blobstore.Delete(ctx, appengine.BlobKey(obj.GetBlobKey())) {
-		Debug(ctx, "SaveBlobItem Faied Blob: "+obj.gaeObjectKey.StringID()+":"+obj.GetBlobKey())
-	}
-	return datastore.Delete(ctx, obj.gaeObjectKey)
-}
-*/
 type BlobItemKeyInfo struct {
 	RootGrouo string
 	Parent    string
