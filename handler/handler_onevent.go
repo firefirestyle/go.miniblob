@@ -26,6 +26,26 @@ func (obj *BlobHandler) AddOnBlobFailed(f func(http.ResponseWriter, *http.Reques
 	obj.onEvent.OnBlobFailedList = append(obj.onEvent.OnBlobFailedList, f)
 }
 
+func (obj *BlobHandler) OnBlobRequestList(w http.ResponseWriter, r *http.Request, i *miniprop.MiniProp, o *miniprop.MiniProp, h *BlobHandler) (map[string]string, error) {
+	ret := map[string]string{}
+	for _, f := range obj.onEvent.OnBlobRequestList {
+		vsTmp, err := f(w, r, i, o, h)
+		for k, v := range vsTmp {
+			ret[k] = v
+		}
+		if err != nil {
+			return ret, err
+		}
+	}
+	return ret, nil
+}
+
+func (obj *BlobHandler) OnBlobFailed(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) {
+	for _, f := range obj.onEvent.OnBlobFailedList {
+		f(w, r, o, h, i)
+	}
+}
+
 /**
  *
  * DeleteRequest

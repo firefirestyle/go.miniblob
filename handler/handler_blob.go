@@ -30,33 +30,27 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 		params, _ := ioutil.ReadAll(r.Body)
 		inputPropObj = miniprop.NewMiniPropFromJson(params)
 	}
+
 	//
 	//
 	kv := strconv.FormatInt(time.Now().Unix(), 36)
 	vs := map[string]string{}
-	{
-		vsTmp := map[string]string{}
-		var err error = nil
-		for _, f := range obj.onEvent.OnBlobRequestList {
-			vsTmp, err = f(w, r, inputPropObj, outputPropObj, obj)
-			if err != nil {
-				for _, ff := range obj.onEvent.OnBlobFailedList {
-					ff(w, r, outputPropObj, obj, nil)
-				}
-				HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, err.Error())
-				return
-			}
-			for k, v := range vsTmp {
-				vs[k] = v
-			}
-		}
+	reqCheckRet, reqCheckErr := obj.OnBlobRequestList(w, r, inputPropObj, outputPropObj, obj)
+	for k, v := range reqCheckRet {
+		vs[k] = v
 	}
-	reqUrl, reqName, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
+
+	if reqCheckErr != nil {
+		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
+		HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, reqCheckErr.Error())
+		return
+	}
+
 	//
+	//
+	reqUrl, reqName, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
 	if err != nil {
-		for _, ff := range obj.onEvent.OnBlobFailedList {
-			ff(w, r, outputPropObj, obj, nil)
-		}
+		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
 		HandleError(w, r, outputPropObj, ErrorCodeMakeRequestUrl, "failed to make uploadurl")
 	} else {
 		outputPropObj.SetString("token", reqUrl.String())
