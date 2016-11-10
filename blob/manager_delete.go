@@ -33,7 +33,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	//
 	// pointer
 	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
-	pointerObj := obj.pointerMgr.GetPointerWithNewForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
+	pointerObj := obj.pointerMgr.GetPointerWithNewForRelayId(ctx, obj.MakeBlobId(newItem.GetParent(), newItem.GetName()))
 	pointerObj.SetSign(newItem.GetBlobKey())
 	pointerObj.SetValue(newItem.gaeKey.StringID())
 	pointerObj.SetOwner(newItem.gaeObject.Owner)
@@ -63,7 +63,7 @@ func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) erro
 }
 
 func (obj *BlobManager) DeletePointer(ctx context.Context, parent, name string) error {
-	return obj.GetPointerMgr().DeletePointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+	return obj.GetPointerMgr().DeletePointer(ctx, obj.MakeBlobId(parent, name), minipointer.TypePointer)
 }
 
 func (obj *BlobManager) DeleteBlobItemWithPointer(ctx context.Context, item *BlobItem) error {

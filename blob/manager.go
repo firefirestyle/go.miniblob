@@ -42,7 +42,6 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 }
 
 func (obj *BlobManager) GetPointerMgr() *minipointer.PointerManager {
-
 	return obj.pointerMgr
 }
 
@@ -70,7 +69,7 @@ func (obj *BlobManager) GetBlobItemFromStringId(ctx context.Context, stringId st
 //
 // if memcachedonly == true , posssible to become pointer == null
 func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent string, name string) (*BlobItem, *minipointer.Pointer, error) {
-	pointerObj, pointerErr := obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+	pointerObj, pointerErr := obj.pointerMgr.GetPointer(ctx, obj.MakeBlobId(parent, name), minipointer.TypePointer)
 	if pointerErr != nil {
 		if obj.pointerMgr.IsMemcachedOnly() == false {
 			return nil, nil, pointerErr
@@ -84,11 +83,11 @@ func (obj *BlobManager) GetBlobItemFromPointer(ctx context.Context, parent strin
 }
 
 func (obj *BlobManager) GetPointer(ctx context.Context, parent, name string) (*minipointer.Pointer, error) {
-	return obj.pointerMgr.GetPointer(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+	return obj.pointerMgr.GetPointer(ctx, obj.MakeBlobId(parent, name), minipointer.TypePointer)
 }
 
 func (obj *BlobManager) GetPointerGaeKey(ctx context.Context, parent, name string) *datastore.Key {
-	return obj.pointerMgr.NewPointerGaeKey(ctx, obj.GetBlobId(parent, name), minipointer.TypePointer)
+	return obj.pointerMgr.NewPointerGaeKey(ctx, obj.MakeBlobId(parent, name), minipointer.TypePointer)
 }
 
 func Debug(ctx context.Context, message string) {
