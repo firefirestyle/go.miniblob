@@ -116,6 +116,18 @@ func (obj *BlobItem) saveDB(ctx context.Context) error {
 	return e
 }
 
+func (obj *BlobManager) DeleteBlobItemFromStringId(ctx context.Context, stringId string) error {
+	keyInfo := obj.GetKeyInfoFromStringId(stringId)
+	blobKey := keyInfo.Sign
+	if blobKey != "" {
+		if nil != blobstore.Delete(ctx, appengine.BlobKey(blobKey)) {
+			Debug(ctx, "GOMIDATA in DeleteFromDBFromStringId : "+stringId)
+		}
+	}
+	return datastore.Delete(ctx, obj.NewBlobItemGaeKeyFromStringId(ctx, stringId))
+}
+
+/*
 func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
 	//Debug(ctx, "delete From DB OLD ITEM =A============GK"+obj.gaeObjectKey.StringID()+";BK:"+obj.GetBlobKey())
 	if obj.GetBlobKey() != "" && nil != blobstore.Delete(ctx, appengine.BlobKey(obj.GetBlobKey())) {
@@ -123,7 +135,7 @@ func (obj *BlobItem) deleteFromDB(ctx context.Context) error {
 	}
 	return datastore.Delete(ctx, obj.gaeObjectKey)
 }
-
+*/
 type BlobItemKeyInfo struct {
 	RootGrouo string
 	Parent    string

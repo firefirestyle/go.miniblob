@@ -107,7 +107,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	pointerObj.SetOwner(newItem.gaeObject.Owner)
 	pointerErr := obj.pointerMgr.Save(ctx, pointerObj)
 	if pointerErr != nil {
-		err := newItem.deleteFromDB(ctx)
+		err := obj.DeleteBlobItemFromStringId(ctx, newItem.gaeObjectKey.StringID())
 		if err != nil {
 			Debug(ctx, "<gomidata>"+newItem.gaeObjectKey.StringID()+"</gomidata>")
 		}
@@ -126,7 +126,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 }
 
 func (obj *BlobManager) DeleteBlobItem(ctx context.Context, item *BlobItem) error {
-	return item.deleteFromDB(ctx)
+	return obj.DeleteBlobItemFromStringId(ctx, item.gaeObjectKey.StringID())
 }
 
 func (obj *BlobManager) GetPointer(ctx context.Context, parent, name string) (*minipointer.Pointer, error) {
@@ -138,7 +138,7 @@ func (obj *BlobManager) DeleteBlobItemWithPointer(ctx context.Context, item *Blo
 	if pointerErr == nil {
 		obj.GetPointerMgr().DeleteFromPointer(ctx, pointer)
 	}
-	return item.deleteFromDB(ctx)
+	return obj.DeleteBlobItem(ctx, item)
 }
 
 //
