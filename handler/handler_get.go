@@ -26,7 +26,7 @@ func (obj *BlobHandler) HandleGetBase(w http.ResponseWriter, r *http.Request, ke
 	errReqCheck := obj.OnGetRequest(w, r, outputPropObj, obj)
 	if errReqCheck != nil {
 		obj.OnGetFailed(w, r, outputPropObj, obj, nil)
-		HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, errReqCheck.Error())
+		HandleError(w, r, outputPropObj, ErrorCodeAtGetRequestCheck, errReqCheck.Error())
 		return
 	}
 	//
@@ -40,7 +40,7 @@ func (obj *BlobHandler) HandleGetBase(w http.ResponseWriter, r *http.Request, ke
 		blobObj, _, err := obj.manager.GetBlobItemFromPointer(ctx, dir, file)
 		if err != nil {
 			obj.OnGetFailed(w, r, outputPropObj, obj, nil)
-			HandleError(w, r, outputPropObj, ErrorCodeGetBlobItem, err.Error())
+			HandleError(w, r, outputPropObj, ErrorCodeAtGetRequestFindBlobItem, err.Error())
 			return
 		} else {
 			obj.OnGetSuccess(w, r, outputPropObj, obj, blobObj)

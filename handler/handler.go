@@ -134,14 +134,16 @@ func HandleError(w http.ResponseWriter, r *http.Request, outputProp *miniprop.Mi
 }
 
 const (
-	ErrorCodeRequestCheck    = 2001
-	ErrorCodeMakeRequestUrl  = 2002
-	ErrorCodeCheckCallback   = 3001
-	ErrorCodeBeforeSaveCheck = 3002
-	ErrorCodeCompleteCheck   = 3003
-	ErrorCodeSaveBlobItem    = 3004
-	ErrorCodeGetBlobItem     = 3005
-	ErrorCodeDeleteBlobItem  = 3006
+	ErrorCodeAtGetRequestCheck        = 2001
+	ErrorCodeAtGetRequestFindBlobItem = 2002
+	ErrorCodeRequestCheck             = 2001
+	ErrorCodeMakeRequestUrl           = 2002
+	ErrorCodeCheckCallback            = 3001
+	ErrorCodeBeforeSaveCheck          = 3002
+	ErrorCodeCompleteCheck            = 3003
+	ErrorCodeSaveBlobItem             = 3004
+	ErrorCodeGetBlobItem              = 3005
+	ErrorCodeDeleteBlobItem           = 3006
 )
 
 func Debug(ctx context.Context, message string) {
