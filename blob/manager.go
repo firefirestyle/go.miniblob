@@ -100,7 +100,6 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 
 	//
 	// pointer
-	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
 	pointerObj := obj.pointerMgr.GetPointerForRelayId(ctx, obj.GetBlobId(newItem.GetParent(), newItem.GetName()))
 	pointerObj.SetSign(newItem.GetBlobKey())
 	pointerObj.SetValue(newItem.gaeObjectKey.StringID())
@@ -115,6 +114,7 @@ func (obj *BlobManager) SaveBlobItemWithImmutable(ctx context.Context, newItem *
 	}
 	//
 	// delete old data
+	currItem, _, currErr := obj.GetBlobItemFromPointer(ctx, newItem.GetParent(), newItem.GetName())
 	if currErr == nil {
 		err := obj.DeleteBlobItem(ctx, currItem)
 		if err != nil {
