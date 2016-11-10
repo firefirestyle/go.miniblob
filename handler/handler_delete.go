@@ -1,8 +1,6 @@
 package handler
 
 import (
-	//	"net/url"
-
 	"net/http"
 
 	"github.com/firefirestyle/go.miniprop"
@@ -15,34 +13,30 @@ func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	dir := requestValues.Get("dir")
 	file := requestValues.Get("file")
 	ctx := appengine.NewContext(r)
-	{
-		for _, ff := range obj.onEvent.OnDeleteRequestList {
-			err := ff(w, r, outputPropObj, obj)
-			if err != nil {
-				HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, err.Error())
-				return
-			}
-		}
+	//
+	//
+	reqErr := obj.OnDeleteRequest(w, r, outputPropObj, obj)
+	if reqErr != nil {
+		HandleError(w, r, outputPropObj, ErrorCodeAtDeleteRequestCheck, reqErr.Error())
+		return
 	}
+
+	//
+	//
 	blobObj, _, err := obj.manager.GetBlobItemFromPointer(ctx, dir, file)
 	if err != nil {
-		for _, ff := range obj.onEvent.OnDeleteFailedList {
-			ff(w, r, outputPropObj, obj, nil)
-		}
-		HandleError(w, r, outputPropObj, ErrorCodeGetBlobItem, err.Error())
+		obj.OnDeleteFailed(w, r, outputPropObj, obj, nil)
+		HandleError(w, r, outputPropObj, ErrorCodeAtDeleteRequestFindBlobItem, err.Error())
+		return
+	}
+	errDelete := obj.manager.DeleteBlobItem(ctx, blobObj)
+	if errDelete != nil {
+		obj.OnDeleteFailed(w, r, outputPropObj, obj, blobObj)
+		HandleError(w, r, outputPropObj, ErrorCodeAtDeleteRequestDeleteBlobItem, err.Error())
 		return
 	} else {
-		errDelete := obj.manager.DeleteBlobItem(ctx, blobObj)
-		if errDelete != nil {
-			for _, ff := range obj.onEvent.OnDeleteFailedList {
-				ff(w, r, outputPropObj, obj, blobObj)
-			}
-			HandleError(w, r, outputPropObj, ErrorCodeDeleteBlobItem, err.Error())
-		} else {
-			for _, f := range obj.onEvent.OnDeleteSuccessList {
-				f(w, r, outputPropObj, obj, blobObj)
-			}
-		}
+		obj.OnDeleteSuccess(w, r, outputPropObj, obj, blobObj)
+		w.Write(outputPropObj.ToJson())
 		return
 	}
 }

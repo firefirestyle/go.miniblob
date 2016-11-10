@@ -30,73 +30,6 @@ type BlobHandler struct {
 	privateSign string
 }
 
-func (obj *BlobHandler) AddOnBlobRequest(f func(w http.ResponseWriter, r *http.Request, input *miniprop.MiniProp, output *miniprop.MiniProp, h *BlobHandler) (map[string]string, error)) {
-	obj.onEvent.OnBlobRequestList = append(obj.onEvent.OnBlobRequestList, f)
-}
-
-func (obj *BlobHandler) AddOnBlobBeforeSave(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error) {
-	obj.onEvent.OnBlobBeforeSaveList = append(obj.onEvent.OnBlobBeforeSaveList, f)
-}
-
-func (obj *BlobHandler) AddOnBlobComplete(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem) error) {
-	obj.onEvent.OnBlobCompleteList = append(obj.onEvent.OnBlobCompleteList, f)
-}
-
-func (obj *BlobHandler) AddOnBlobFailed(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
-	obj.onEvent.OnBlobFailedList = append(obj.onEvent.OnBlobFailedList, f)
-}
-
-func (obj *BlobHandler) AddOnDeleteRequest(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error) {
-	obj.onEvent.OnDeleteRequestList = append(obj.onEvent.OnDeleteRequestList, f)
-}
-
-func (obj *BlobHandler) AddOnDeleteFailed(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
-	obj.onEvent.OnDeleteFailedList = append(obj.onEvent.OnDeleteFailedList, f)
-}
-
-func (obj *BlobHandler) AddOnDeleteSuccess(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
-	obj.onEvent.OnDeleteSuccessList = append(obj.onEvent.OnDeleteSuccessList, f)
-}
-
-//
-//
-//
-func (obj *BlobHandler) AddOnGetRequest(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler) error) {
-	obj.onEvent.OnGetRequestList = append(obj.onEvent.OnGetRequestList, f)
-}
-
-func (obj *BlobHandler) OnGetRequest(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler) error {
-	for _, f := range obj.onEvent.OnGetRequestList {
-		errReqCheck := f(w, r, o, h)
-		if errReqCheck != nil {
-			return errReqCheck
-		}
-	}
-	return nil
-}
-
-func (obj *BlobHandler) AddOnGetFailed(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
-	obj.onEvent.OnGetFailedList = append(obj.onEvent.OnGetFailedList, f)
-}
-
-func (obj *BlobHandler) AddOnGetSuccess(f func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)) {
-	obj.onEvent.OnGetSuccessList = append(obj.onEvent.OnGetSuccessList, f)
-}
-
-//	OnGetFailedList      []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
-func (obj *BlobHandler) OnGetFailed(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) {
-	for _, f := range obj.onEvent.OnGetFailedList {
-		f(w, r, o, h, i)
-	}
-}
-
-//	OnGetSuccessList     []func(http.ResponseWriter, *http.Request, *miniprop.MiniProp, *BlobHandler, *miniblob.BlobItem)
-func (obj *BlobHandler) OnGetSuccess(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) {
-	for _, f := range obj.onEvent.OnGetSuccessList {
-		f(w, r, o, h, i)
-	}
-}
-
 //
 //
 //
@@ -134,16 +67,19 @@ func HandleError(w http.ResponseWriter, r *http.Request, outputProp *miniprop.Mi
 }
 
 const (
-	ErrorCodeAtGetRequestCheck        = 2001
-	ErrorCodeAtGetRequestFindBlobItem = 2002
-	ErrorCodeRequestCheck             = 2001
-	ErrorCodeMakeRequestUrl           = 2002
-	ErrorCodeCheckCallback            = 3001
-	ErrorCodeBeforeSaveCheck          = 3002
-	ErrorCodeCompleteCheck            = 3003
-	ErrorCodeSaveBlobItem             = 3004
-	ErrorCodeGetBlobItem              = 3005
-	ErrorCodeDeleteBlobItem           = 3006
+	ErrorCodeAtGetRequestCheck             = 2001
+	ErrorCodeAtGetRequestFindBlobItem      = 2002
+	ErrorCodeAtDeleteRequestCheck          = 2001
+	ErrorCodeAtDeleteRequestFindBlobItem   = 2002
+	ErrorCodeAtDeleteRequestDeleteBlobItem = 2003
+	ErrorCodeRequestCheck                  = 2001
+	ErrorCodeMakeRequestUrl                = 2002
+	ErrorCodeCheckCallback                 = 3001
+	ErrorCodeBeforeSaveCheck               = 3002
+	ErrorCodeCompleteCheck                 = 3003
+	ErrorCodeSaveBlobItem                  = 3004
+	ErrorCodeGetBlobItem                   = 3005
+	ErrorCodeDeleteBlobItem                = 3006
 )
 
 func Debug(ctx context.Context, message string) {
