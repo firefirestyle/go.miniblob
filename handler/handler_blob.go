@@ -33,7 +33,6 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 
 	//
 	//
-	kv := strconv.FormatInt(time.Now().Unix(), 36)
 	vs := map[string]string{}
 	reqCheckRet, reqCheckErr := obj.OnBlobRequestList(w, r, inputPropObj, outputPropObj, obj)
 	for k, v := range reqCheckRet {
@@ -48,6 +47,7 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 
 	//
 	//
+	kv := strconv.FormatInt(time.Now().Unix(), 36)
 	reqUrl, reqName, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
 	if err != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
@@ -62,21 +62,18 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 
 func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	//
+	//
 	outputPropObj := miniprop.NewMiniProp()
 	res, e := obj.manager.CheckedCallback(r, obj.privateSign)
 	if e != nil {
-		for _, ff := range obj.onEvent.OnBlobFailedList {
-			ff(w, r, outputPropObj, obj, nil)
-		}
+		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
 		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, e.Error())
 		return
 	}
 	curTime := time.Now().Unix()
 	kvTime, errTime := strconv.ParseInt(r.FormValue("kv"), 36, 64)
 	if errTime != nil || !(curTime-60*1 < kvTime && kvTime < curTime+60*10) {
-		for _, ff := range obj.onEvent.OnBlobFailedList {
-			ff(w, r, outputPropObj, obj, nil)
-		}
+		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
 		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, "kv time error")
 		return
 	}
@@ -89,9 +86,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 		for _, f := range obj.onEvent.OnBlobBeforeSaveList {
 			err := f(w, r, outputPropObj, obj, newItem)
 			if err != nil {
-				for _, ff := range obj.onEvent.OnBlobFailedList {
-					ff(w, r, outputPropObj, obj, newItem)
-				}
+				obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
 				HandleError(w, r, outputPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
 				return
 			}
@@ -99,9 +94,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	}
 	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
-		for _, ff := range obj.onEvent.OnBlobFailedList {
-			ff(w, r, outputPropObj, obj, newItem)
-		}
+		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
 		HandleError(w, r, outputPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")
 		return
 	}
@@ -109,10 +102,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	for _, f := range obj.onEvent.OnBlobCompleteList {
 		err3 := f(w, r, outputPropObj, obj, newItem)
 		if err3 != nil {
-			for _, ff := range obj.onEvent.OnBlobFailedList {
-				ff(w, r, outputPropObj, obj, newItem)
-			}
-
+			obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
 			HandleError(w, r, outputPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
 			return
 		}
