@@ -21,11 +21,11 @@ type BlobManager struct {
 }
 
 type BlobManagerConfig struct {
-	RootGroup     string
-	Kind          string
-	PointerKind   string
-	CallbackUrl   string
-	MemcachedOnly bool
+	RootGroup              string
+	Kind                   string
+	PointerKind            string
+	CallbackUrl            string
+	MemcachedOnlyInPointer bool
 }
 
 func NewBlobManager(config BlobManagerConfig) *BlobManager {
@@ -36,7 +36,7 @@ func NewBlobManager(config BlobManagerConfig) *BlobManager {
 	ret.pointerMgr = minipointer.NewPointerManager(minipointer.PointerManagerConfig{
 		RootGroup:     config.RootGroup,
 		Kind:          config.PointerKind,
-		MemcachedOnly: config.MemcachedOnly, // todo
+		MemcachedOnly: config.MemcachedOnlyInPointer, // todo
 	})
 	return ret
 }
