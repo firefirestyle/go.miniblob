@@ -82,30 +82,24 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	ctx := appengine.NewContext(r)
 	newItem := obj.manager.NewBlobItem(ctx, res.DirName, res.FileName, res.BlobKey)
 	//
-	if obj.onEvent.OnBlobBeforeSaveList != nil {
-		for _, f := range obj.onEvent.OnBlobBeforeSaveList {
-			err := f(w, r, outputPropObj, obj, newItem)
-			if err != nil {
-				obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-				HandleError(w, r, outputPropObj, ErrorCodeBeforeSaveCheck, "Failed to check")
-				return
-			}
-		}
+	befErr := obj.OnBlobBeforeSave(w, r, outputPropObj, obj, newItem)
+	if befErr != nil {
+		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
+		HandleError(w, r, outputPropObj, ErrorCodeBeforeSaveCheck, befErr.Error())
+		return
 	}
 	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-		HandleError(w, r, outputPropObj, ErrorCodeSaveBlobItem, "Failed to save blobitem")
+		HandleError(w, r, outputPropObj, ErrorCodeSaveBlobItem, err2.Error())
 		return
 	}
 
-	for _, f := range obj.onEvent.OnBlobCompleteList {
-		err3 := f(w, r, outputPropObj, obj, newItem)
-		if err3 != nil {
-			obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-			HandleError(w, r, outputPropObj, ErrorCodeCompleteCheck, "Failed to save blobitem")
-			return
-		}
+	err3 := obj.OnBlobComplete(w, r, outputPropObj, obj, newItem)
+	if err3 != nil {
+		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
+		HandleError(w, r, outputPropObj, ErrorCodeCompleteCheck, err3.Error())
+		return
 	}
 	outputPropObj.SetString("blobkey", newItem.GetBlobKey())
 	w.Write(outputPropObj.ToJson())

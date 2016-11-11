@@ -40,6 +40,26 @@ func (obj *BlobHandler) OnBlobRequestList(w http.ResponseWriter, r *http.Request
 	return ret, nil
 }
 
+func (obj *BlobHandler) OnBlobBeforeSave(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) error {
+	for _, f := range obj.onEvent.OnBlobBeforeSaveList {
+		err := f(w, r, o, h, i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (obj *BlobHandler) OnBlobComplete(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) error {
+	for _, f := range obj.onEvent.OnBlobCompleteList {
+		err := f(w, r, o, h, i)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (obj *BlobHandler) OnBlobFailed(w http.ResponseWriter, r *http.Request, o *miniprop.MiniProp, h *BlobHandler, i *miniblob.BlobItem) {
 	for _, f := range obj.onEvent.OnBlobFailedList {
 		f(w, r, o, h, i)
