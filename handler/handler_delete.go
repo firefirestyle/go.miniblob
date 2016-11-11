@@ -23,19 +23,21 @@ func (obj *BlobHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	//
 	//
-	blobObj, _, err := obj.manager.GetBlobItemFromPointer(ctx, dir, file)
+	blolStringId, _, err := obj.manager.GetBlobItemStringIdFromPointer(ctx, dir, file)
+	//	obj.manager.DeleteBlobItemWithPointerFromStringId(ctx, obj.manager.MakeStringId())
+	//	blobObj, _, err := obj.manager.GetBlobItemFromPointer(ctx, dir, file)
 	if err != nil {
 		obj.OnDeleteFailed(w, r, outputPropObj, obj, nil)
 		HandleError(w, r, outputPropObj, ErrorCodeAtDeleteRequestFindBlobItem, err.Error())
 		return
 	}
-	errDelete := obj.manager.DeleteBlobItem(ctx, blobObj)
+	errDelete := obj.manager.DeleteBlobItemWithPointerFromStringId(ctx, blolStringId)
 	if errDelete != nil {
-		obj.OnDeleteFailed(w, r, outputPropObj, obj, blobObj)
+		obj.OnDeleteFailed(w, r, outputPropObj, obj, nil)
 		HandleError(w, r, outputPropObj, ErrorCodeAtDeleteRequestDeleteBlobItem, err.Error())
 		return
 	} else {
-		obj.OnDeleteSuccess(w, r, outputPropObj, obj, blobObj)
+		obj.OnDeleteSuccess(w, r, outputPropObj, obj, nil)
 		w.Write(outputPropObj.ToJson())
 		return
 	}

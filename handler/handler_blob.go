@@ -93,7 +93,7 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-		obj.GetManager().DeleteBlobItem(ctx, newItem)
+		blobstore.Delete(ctx, appengine.BlobKey(res.BlobKey))
 		HandleError(w, r, outputPropObj, ErrorCodeAtBlobSaveBlobItem, err2.Error())
 		return
 	}
