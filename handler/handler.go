@@ -72,14 +72,14 @@ const (
 	ErrorCodeAtDeleteRequestCheck          = 2001
 	ErrorCodeAtDeleteRequestFindBlobItem   = 2002
 	ErrorCodeAtDeleteRequestDeleteBlobItem = 2003
-	ErrorCodeRequestCheck                  = 2001
-	ErrorCodeMakeRequestUrl                = 2002
-	ErrorCodeCheckCallback                 = 3001
-	ErrorCodeBeforeSaveCheck               = 3002
-	ErrorCodeCompleteCheck                 = 3003
-	ErrorCodeSaveBlobItem                  = 3004
-	ErrorCodeGetBlobItem                   = 3005
-	ErrorCodeDeleteBlobItem                = 3006
+	ErrorCodeAtBlobRequestCheck            = 2001
+	ErrorCodeAtBlobMakeRequestUrl          = 2004
+	ErrorCodeAtBlobCheckCallback           = 2005
+	ErrorCodeAtBlobBeforeSaveCheck         = 2007
+	ErrorCodeAtBlobCompleteCheck           = 2008
+	ErrorCodeAtBlobSaveBlobItem            = 2009
+	ErrorCodeGetBlobItem                   = 2010
+	ErrorCodeDeleteBlobItem                = 2011
 )
 
 func Debug(ctx context.Context, message string) {

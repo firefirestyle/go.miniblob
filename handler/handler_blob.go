@@ -9,10 +9,11 @@ import (
 	"github.com/firefirestyle/go.miniprop"
 
 	//	miniblob "github.com/firefirestyle/go.miniblob/blob"
-	"google.golang.org/appengine"
-	//	"google.golang.org/appengine/blobstore"
 	"strconv"
 	"time"
+
+	"google.golang.org/appengine"
+	"google.golang.org/appengine/blobstore"
 )
 
 func (obj *BlobHandler) HandleBlobRequestToken(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +42,7 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 
 	if reqCheckErr != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
-		HandleError(w, r, outputPropObj, ErrorCodeRequestCheck, reqCheckErr.Error())
+		HandleError(w, r, outputPropObj, ErrorCodeAtBlobRequestCheck, reqCheckErr.Error())
 		return
 	}
 
@@ -51,7 +52,7 @@ func (obj *BlobHandler) HandleBlobRequestTokenFromParams(w http.ResponseWriter, 
 	reqUrl, reqName, err := obj.manager.MakeRequestUrl(ctx, dirName, fileName, kv, obj.privateSign, vs)
 	if err != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
-		HandleError(w, r, outputPropObj, ErrorCodeMakeRequestUrl, "failed to make uploadurl")
+		HandleError(w, r, outputPropObj, ErrorCodeAtBlobMakeRequestUrl, "failed to make uploadurl")
 	} else {
 		outputPropObj.SetString("token", reqUrl.String())
 		outputPropObj.SetString("name", reqName)
@@ -67,14 +68,14 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	res, e := obj.manager.CheckedCallback(r, obj.privateSign)
 	if e != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
-		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, e.Error())
+		HandleError(w, r, outputPropObj, ErrorCodeAtBlobCheckCallback, e.Error())
 		return
 	}
 	curTime := time.Now().Unix()
 	kvTime, errTime := strconv.ParseInt(r.FormValue("kv"), 36, 64)
 	if errTime != nil || !(curTime-60*1 < kvTime && kvTime < curTime+60*10) {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, nil)
-		HandleError(w, r, outputPropObj, ErrorCodeCheckCallback, "kv time error")
+		HandleError(w, r, outputPropObj, ErrorCodeAtBlobCheckCallback, "kv time error")
 		return
 	}
 
@@ -84,21 +85,24 @@ func (obj *BlobHandler) HandleUploaded(w http.ResponseWriter, r *http.Request) {
 	//
 	befErr := obj.OnBlobBeforeSave(w, r, outputPropObj, obj, newItem)
 	if befErr != nil {
+		blobstore.Delete(ctx, appengine.BlobKey(res.BlobKey))
 		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-		HandleError(w, r, outputPropObj, ErrorCodeBeforeSaveCheck, befErr.Error())
+		HandleError(w, r, outputPropObj, ErrorCodeAtBlobBeforeSaveCheck, befErr.Error())
 		return
 	}
 	err2 := obj.manager.SaveBlobItemWithImmutable(ctx, newItem)
 	if err2 != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-		HandleError(w, r, outputPropObj, ErrorCodeSaveBlobItem, err2.Error())
+		obj.GetManager().DeleteBlobItem(ctx, newItem)
+		HandleError(w, r, outputPropObj, ErrorCodeAtBlobSaveBlobItem, err2.Error())
 		return
 	}
 
 	err3 := obj.OnBlobComplete(w, r, outputPropObj, obj, newItem)
 	if err3 != nil {
 		obj.OnBlobFailed(w, r, outputPropObj, obj, newItem)
-		HandleError(w, r, outputPropObj, ErrorCodeCompleteCheck, err3.Error())
+		obj.GetManager().DeleteBlobItem(ctx, newItem)
+		HandleError(w, r, outputPropObj, ErrorCodeAtBlobCompleteCheck, err3.Error())
 		return
 	}
 	outputPropObj.SetString("blobkey", newItem.GetBlobKey())
