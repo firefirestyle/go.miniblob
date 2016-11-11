@@ -1,4 +1,4 @@
-package miniblob
+package blob
 
 import (
 	//	"golang.org/x/net/context"

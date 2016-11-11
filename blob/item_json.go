@@ -1,4 +1,4 @@
-package miniblob
+package blob
 
 import (
 	"encoding/json"

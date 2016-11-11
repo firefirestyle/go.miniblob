@@ -1,5 +1,6 @@
-package miniblob
+package client
 
+/*
 //
 // todo
 //
@@ -54,3 +55,4 @@ func (obj *BlobManager) SaveData(c context.Context, url string, data []byte) err
 	}
 	return nil
 }
+*/
