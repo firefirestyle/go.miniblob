@@ -32,7 +32,7 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	}
 	//
 	//
-	callbackUrlObj, _ := url.Parse(obj.callbackUrl)
+	callbackUrlObj, _ := url.Parse(obj.config.CallbackUrl)
 	callbackValue := callbackUrlObj.Query()
 	callbackValue.Add("dir", dirName)
 	callbackValue.Add("file", fileName)
@@ -52,9 +52,9 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	hash := hmac.New(sha1.New, []byte(privateSign))
 	//	hash := sha1.New()
 
-	io.WriteString(hash, obj.rootGroup)
+	io.WriteString(hash, obj.config.RootGroup)
 	io.WriteString(hash, dirName)
-	io.WriteString(hash, obj.blobItemKind)
+	io.WriteString(hash, obj.config.Kind)
 	io.WriteString(hash, fileName)
 	io.WriteString(hash, publicSign)
 
@@ -73,7 +73,11 @@ func (obj *BlobManager) MakeRequestUrl(ctx context.Context, dirName string, file
 	callbackValue.Add("hash", base64.StdEncoding.EncodeToString(hash.Sum(nil)))
 	callbackUrlObj.RawQuery = callbackValue.Encode()
 	retV, retE := blobstore.UploadURL(ctx, callbackUrlObj.String(), nil)
-	return retV, base32.StdEncoding.EncodeToString(hash.Sum([]byte("" + dirName + "/" + fileName))), retE
+	name := base32.StdEncoding.EncodeToString(hash.Sum([]byte("" + dirName + "/" + fileName)))
+	if obj.config.HashLength >= 5 && len(name) > obj.config.HashLength {
+		name = name[:obj.config.HashLength]
+	}
+	return retV, name, retE
 }
 
 type CheckCallbackResult struct {
@@ -105,9 +109,9 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 	sort.Strings(keys)
 	//
 	//
-	io.WriteString(hash, obj.rootGroup)
+	io.WriteString(hash, obj.config.RootGroup)
 	io.WriteString(hash, dirName)
-	io.WriteString(hash, obj.blobItemKind)
+	io.WriteString(hash, obj.config.Kind)
 	io.WriteString(hash, fileName)
 	io.WriteString(hash, kv)
 
@@ -126,6 +130,9 @@ func (obj *BlobManager) CheckedCallback(r *http.Request, privateSign string) (*C
 	// files
 	// --
 	name := base32.StdEncoding.EncodeToString(hash.Sum([]byte("" + dirName + "/" + fileName)))
+	if obj.config.HashLength >= 5 && len(name) > obj.config.HashLength {
+		name = name[:obj.config.HashLength]
+	}
 	file := blobs[name]
 	if len(file) == 0 {
 		return nil, errors.New("faied to find file")

@@ -14,10 +14,8 @@ import (
 )
 
 type BlobManager struct {
-	callbackUrl  string
-	blobItemKind string
-	rootGroup    string
-	pointerMgr   *minipointer.PointerManager
+	config     BlobManagerConfig
+	pointerMgr *minipointer.PointerManager
 }
 
 type BlobManagerConfig struct {
@@ -26,13 +24,12 @@ type BlobManagerConfig struct {
 	PointerKind            string
 	CallbackUrl            string
 	MemcachedOnlyInPointer bool
+	HashLength             int
 }
 
 func NewBlobManager(config BlobManagerConfig) *BlobManager {
 	ret := new(BlobManager)
-	ret.rootGroup = config.RootGroup
-	ret.blobItemKind = config.Kind
-	ret.callbackUrl = config.CallbackUrl
+	ret.config = config
 	ret.pointerMgr = minipointer.NewPointerManager(minipointer.PointerManagerConfig{
 		RootGroup:     config.RootGroup,
 		Kind:          config.PointerKind,

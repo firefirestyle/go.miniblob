@@ -17,8 +17,8 @@ https://cloud.google.com/appengine/docs/go/config/indexconfig#updating_indexes
 */
 func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent string, cursorSrc string) BlobFounds {
 	//
-	q := datastore.NewQuery(obj.blobItemKind)
-	q = q.Filter("RootGroup =", obj.rootGroup)
+	q := datastore.NewQuery(obj.config.Kind)
+	q = q.Filter("RootGroup =", obj.config.RootGroup)
 	q = q.Filter("Parent =", parent)
 	q = q.Order("-Updated")
 	//
@@ -27,8 +27,8 @@ func (obj *BlobManager) FindBlobItemFromParent(ctx context.Context, parent strin
 
 func (obj *BlobManager) FindBlobItemFromPath(ctx context.Context, parent string, name string, cursorSrc string) BlobFounds {
 	//
-	q := datastore.NewQuery(obj.blobItemKind)
-	q = q.Filter("RootGroup =", obj.rootGroup)
+	q := datastore.NewQuery(obj.config.Kind)
+	q = q.Filter("RootGroup =", obj.config.RootGroup)
 	q = q.Filter("Parent =", parent)
 	q = q.Filter("Name =", name)
 	q = q.Order("-Updated")
@@ -38,8 +38,8 @@ func (obj *BlobManager) FindBlobItemFromPath(ctx context.Context, parent string,
 
 func (obj *BlobManager) FindAllBlobItemFromPath(ctx context.Context, parent string) BlobFounds {
 	//
-	q := datastore.NewQuery(obj.blobItemKind)
-	q = q.Filter("RootGroup =", obj.rootGroup)
+	q := datastore.NewQuery(obj.config.Kind)
+	q = q.Filter("RootGroup =", obj.config.RootGroup)
 	q = q.Filter("Parent =", parent)
 	q = q.Order("-Updated")
 	//
@@ -48,8 +48,8 @@ func (obj *BlobManager) FindAllBlobItemFromPath(ctx context.Context, parent stri
 
 func (obj *BlobManager) FindBlobItemFromOwner(ctx context.Context, owner string, cursorSrc string) BlobFounds {
 	//
-	q := datastore.NewQuery(obj.blobItemKind)
-	q = q.Filter("RootGroup =", obj.rootGroup)
+	q := datastore.NewQuery(obj.config.Kind)
+	q = q.Filter("RootGroup =", obj.config.RootGroup)
 	q = q.Filter("Owner =", owner)
 	q = q.Order("-Updated")
 	//

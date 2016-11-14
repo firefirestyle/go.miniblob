@@ -15,13 +15,13 @@ import (
 func (obj *BlobManager) NewBlobItem(ctx context.Context, parent string, name string, blobKey string) *BlobItem {
 	ret := new(BlobItem)
 	ret.gaeObject = new(GaeObjectBlobItem)
-	ret.gaeObject.RootGroup = obj.rootGroup
+	ret.gaeObject.RootGroup = obj.config.RootGroup
 	ret.gaeObject.Parent = parent
 	ret.gaeObject.Name = name
 	ret.gaeObject.BlobKey = blobKey
 	ret.gaeObject.Updated = time.Now()
 	ret.gaeObject.Sign = blobKey
-	ret.gaeKey = datastore.NewKey(ctx, obj.blobItemKind, obj.MakeStringId(parent, name, blobKey), 0, nil)
+	ret.gaeKey = datastore.NewKey(ctx, obj.config.Kind, obj.MakeStringId(parent, name, blobKey), 0, nil)
 	return ret
 }
 
@@ -32,7 +32,7 @@ func (obj *BlobManager) NewBlobItemFromMemcache(ctx context.Context, keyId strin
 	}
 
 	ret := new(BlobItem)
-	ret.gaeKey = datastore.NewKey(ctx, obj.blobItemKind, keyId, 0, nil)
+	ret.gaeKey = datastore.NewKey(ctx, obj.config.Kind, keyId, 0, nil)
 	ret.gaeObject = new(GaeObjectBlobItem)
 	err := ret.SetParamFromJson(jsonSource.Value)
 	return ret, err
@@ -43,7 +43,7 @@ func (obj *BlobManager) NewBlobItemGaeKey(ctx context.Context, parent string, na
 }
 
 func (obj *BlobManager) NewBlobItemGaeKeyFromStringId(ctx context.Context, stringId string) *datastore.Key {
-	return datastore.NewKey(ctx, obj.blobItemKind, stringId, 0, nil)
+	return datastore.NewKey(ctx, obj.config.Kind, stringId, 0, nil)
 }
 
 func (obj *BlobItem) updateMemcache(ctx context.Context) error {
@@ -94,7 +94,7 @@ func (obj *BlobManager) GetKeyInfoFromStringId(stringId string) BlobItemKeyInfo 
 
 func (obj *BlobManager) MakeStringId(parent string, name string, sign string) string {
 	propObj := miniprop.NewMiniProp()
-	propObj.SetString("p", obj.rootGroup)
+	propObj.SetString("p", obj.config.RootGroup)
 	propObj.SetString("d", parent)
 	propObj.SetString("f", name)
 	propObj.SetString("s", sign)
@@ -103,7 +103,7 @@ func (obj *BlobManager) MakeStringId(parent string, name string, sign string) st
 
 func (obj *BlobManager) MakeBlobId(parent string, name string) string {
 	propObj := miniprop.NewMiniProp()
-	propObj.SetString("p", obj.rootGroup)
+	propObj.SetString("p", obj.config.RootGroup)
 	propObj.SetString("d", parent)
 	propObj.SetString("f", name)
 	return string(propObj.ToJson())
